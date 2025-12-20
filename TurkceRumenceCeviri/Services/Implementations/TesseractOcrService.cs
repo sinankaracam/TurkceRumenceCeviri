@@ -138,11 +138,21 @@ public class TesseractOcrService : IOcrService
 
         var lines = text.Replace("\r\n", "\n")
                         .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var roChars = new[] { '?', 'â', 'î', '?', '?', '?', 'Â', 'Î', '?', '?' };
+        var roChars = new[] { '?','?','â','Â','î','Î','?','?','?','?' };
         var detected = text.IndexOfAny(roChars) >= 0 ? "ro" : "tr";
         var result = new List<OcrLine>(lines.Length);
         foreach (var l in lines)
-            result.Add(new OcrLine(l, detected));
+        {
+            var t = l.Trim();
+            if (string.IsNullOrEmpty(t)) continue;
+            bool hasWordChar = false;
+            foreach (var ch in t)
+            {
+                if (char.IsLetterOrDigit(ch)) { hasWordChar = true; break; }
+            }
+            if (!hasWordChar) continue;
+            result.Add(new OcrLine(t, detected));
+        }
         return result;
     }
 }

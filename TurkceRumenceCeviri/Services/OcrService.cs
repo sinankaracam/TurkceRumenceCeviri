@@ -44,7 +44,15 @@ public class OcrService : IOcrService
         }
     }
 
-    private static string DetectLanguageFromText(string text) => "tr";
+    private static string DetectLanguageFromText(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "unknown";
+        if (TurkceRumenceCeviri.Services.Implementations.RomanianNormalizer.IsLikelyTurkish(text))
+            return "tr";
+        if (TurkceRumenceCeviri.Services.Implementations.RomanianNormalizer.IsLikelyRomanian(text))
+            return "ro";
+        return TurkceRumenceCeviri.Services.Implementations.RomanianNormalizer.DetectLanguageForText(text);
+    }
 
     public async Task<IReadOnlyList<OcrLine>> ExtractLinesAsync(string imagePath)
     {

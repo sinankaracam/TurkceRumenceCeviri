@@ -58,13 +58,16 @@ public partial class App : Application
             ? new TesseractOcrService(tesseractExe, config.OcrLanguage)
             : pythonService; // fallback to python OCR
 
+        // AI Assistant via Groq
+        IAIAssistantService aiService = new GroqAssistantService(config.GroqKey);
+
         // ViewModel oluştur (MVVM Pattern)
         var viewModel = new MainViewModel(
             translationService,
             speechService,
             ttsService,
             ocrService,
-            pythonService
+            aiService
         );
 
         // MainWindow oluştur ve DataContext ayarla

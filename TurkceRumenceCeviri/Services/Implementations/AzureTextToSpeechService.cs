@@ -5,14 +5,15 @@ namespace TurkceRumenceCeviri.Services.Implementations;
 public class AzureTextToSpeechService : ITextToSpeechService
 {
     private readonly SpeechSynthesizer _synthesizer;
+    private readonly SpeechConfig _config;
     private bool _isPlaying;
 
     public bool IsPlaying => _isPlaying;
 
     public AzureTextToSpeechService(string speechKey, string speechRegion)
     {
-        var config = SpeechConfig.FromSubscription(speechKey, speechRegion);
-        _synthesizer = new SpeechSynthesizer(config);
+        _config = SpeechConfig.FromSubscription(speechKey, speechRegion);
+        _synthesizer = new SpeechSynthesizer(_config);
         _isPlaying = false;
     }
 
@@ -24,19 +25,14 @@ public class AzureTextToSpeechService : ITextToSpeechService
 
             var voiceName = language?.ToLower() switch
             {
-                "tr" => "tr-TR-AysanNeural",
+                "tr" => "tr-TR-AysuNeural",
                 "ro" => "ro-RO-AlinaNeural",
-                _ => "tr-TR-AysanNeural"
+                _ => "tr-TR-AysuNeural"
             };
-
-            // SSML formatýnda seslendir
-            var ssml = $@"<speak version='1.0' xml:lang='{GetLocale(language)}'>
-                <voice name='{voiceName}'>
-                    {System.Net.WebUtility.HtmlEncode(text)}
-                </voice>
-            </speak>";
-
-            var result = await _synthesizer.SpeakSsmlAsync(ssml);
+            _config.SpeechSynthesisLanguage = GetLocale(language);
+            _config.SpeechSynthesisVoiceName = voiceName;
+            using var localSynth = new SpeechSynthesizer(_config);
+            var result = await localSynth.SpeakTextAsync(text);
             
             if (result.Reason != ResultReason.SynthesizingAudioCompleted)
             {

@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using TurkceRumenceCeviri.Services;
@@ -46,6 +46,10 @@ public class MainViewModel : INotifyPropertyChanged
     private string _translatedRomanian = "";
     private string _translatedTurkish = "";
     private string _assistantResponse = "";
+    private string _assistantQuestion = "";
+    // Assistant counterpart properties
+    private string _translatedTurkishAssistant = "";
+    private string _translatedRomanianAssistant = "";
     private string _detectedLanguage = "TR";
     private bool _isListening;
     private bool _isSpeaking;
@@ -102,6 +106,15 @@ public class MainViewModel : INotifyPropertyChanged
         set { SetProperty(ref _assistantResponse, value); }
     }
 
+    public string AssistantQuestion
+    {
+        get => _assistantQuestion;
+        set { SetProperty(ref _assistantQuestion, value); }
+    }
+
+    public string TranslatedTurkishAssistant { get => _translatedTurkishAssistant; set => SetProperty(ref _translatedTurkishAssistant, value); }
+    public string TranslatedRomanianAssistant { get => _translatedRomanianAssistant; set => SetProperty(ref _translatedRomanianAssistant, value); }
+
     public string DetectedLanguage
     {
         get => _detectedLanguage;
@@ -129,6 +142,11 @@ public class MainViewModel : INotifyPropertyChanged
     public RelayCommand AskAssistantCommand { get; }
     public RelayCommand ClearCommand { get; }
     public RelayCommand ExtractFromScreenCommand { get; }
+    public RelayCommand SummarizeCommand { get; }
+    public RelayCommand ExtractQuestionsCommand { get; }
+    public RelayCommand AnswerQuestionsCommand { get; }
+    public RelayCommand WordListCommand { get; }
+    public RelayCommand PronounceCommand { get; }
 
     public MainViewModel(
         ITranslationService translationService,
@@ -152,6 +170,11 @@ public class MainViewModel : INotifyPropertyChanged
         AskAssistantCommand = new RelayCommand(_ => AskAssistant());
         ClearCommand = new RelayCommand(_ => Clear());
         ExtractFromScreenCommand = new RelayCommand(_ => ExtractFromScreen());
+        SummarizeCommand = new RelayCommand(_ => { AssistantQuestion = "Metni özetle"; AskAssistant(); });
+        ExtractQuestionsCommand = new RelayCommand(_ => { AssistantQuestion = "Soruları çıkar"; AskAssistant(); });
+        AnswerQuestionsCommand = new RelayCommand(_ => { AssistantQuestion = "Sadece Soruları cevapla"; AskAssistant(); });
+        WordListCommand = new RelayCommand(_ => { AssistantQuestion = "Kelime listesi"; AskAssistant(); });
+        PronounceCommand = new RelayCommand(_ => { AssistantQuestion = "Telaffuz öner"; AskAssistant(); });
     }
 
     private async void StartListening()
@@ -168,7 +191,7 @@ public class MainViewModel : INotifyPropertyChanged
                 var recognizedText = await _speechService.RecognizeAsync(_listeningCts.Token);
                 DebugHelper.LogMessage($"STT result: '{recognizedText}'", "STT");
 
-                if (!string.IsNullOrEmpty(recognizedText) && !recognizedText.StartsWith("[") && recognizedText != "�leri" && recognizedText != "Geri")
+                if (!string.IsNullOrEmpty(recognizedText) && !recognizedText.StartsWith("[") && recognizedText != "İleri" && recognizedText != "Geri")
                 {
                     var detectedLang = _speechService.LastDetectedLanguage ?? await _translationService.DetectLanguageAsync(recognizedText);
                     DebugHelper.LogMessage($"Detected language: {detectedLang}", "STT");
@@ -227,6 +250,15 @@ public class MainViewModel : INotifyPropertyChanged
     private async void Speak()
     {
         DebugHelper.LogMessage("Speak invoked");
+        // Stop mic if currently listening to avoid STT capturing TTS audio
+        if (IsListening)
+        {
+            try { _listeningCts?.Cancel(); } catch { }
+            _listeningCts?.Dispose();
+            _listeningCts = null;
+            try { await _speechService.StopRecognitionAsync(); } catch { }
+            IsListening = false;
+        }
         IsSpeaking = true;
 
         try
@@ -250,6 +282,15 @@ public class MainViewModel : INotifyPropertyChanged
     {
         DebugHelper.LogMessage("SpeakTurkishTranslation invoked");
         if (string.IsNullOrWhiteSpace(TranslatedTurkish)) return;
+        // Stop mic if currently listening to avoid STT capturing TTS audio
+        if (IsListening)
+        {
+            try { _listeningCts?.Cancel(); } catch { }
+            _listeningCts?.Dispose();
+            _listeningCts = null;
+            try { await _speechService.StopRecognitionAsync(); } catch { }
+            IsListening = false;
+        }
         IsSpeaking = true;
         try
         {
@@ -266,6 +307,15 @@ public class MainViewModel : INotifyPropertyChanged
     {
         DebugHelper.LogMessage("SpeakRomanianTranslation invoked");
         if (string.IsNullOrWhiteSpace(TranslatedRomanian)) return;
+        // Stop mic if currently listening to avoid STT capturing TTS audio
+        if (IsListening)
+        {
+            try { _listeningCts?.Cancel(); } catch { }
+            _listeningCts?.Dispose();
+            _listeningCts = null;
+            try { await _speechService.StopRecognitionAsync(); } catch { }
+            IsListening = false;
+        }
         IsSpeaking = true;
         try
         {
@@ -286,7 +336,15 @@ public class MainViewModel : INotifyPropertyChanged
 
         try
         {
-            AssistantResponse = await _aiService.AnswerQuestionAsync("", context, language);
+            var original = await _aiService.AnswerQuestionAsync(AssistantQuestion ?? string.Empty, context, language);
+            AssistantResponse = original;
+            // produce counterpart translation for the other assistant box
+            var targetLang = language == "tr" ? "ro" : "tr";
+            var translated = await _translationService.TranslateAsync(original, language, targetLang);
+            if (language == "tr")
+                TranslatedRomanianAssistant = translated;
+            else
+                TranslatedTurkishAssistant = translated;
         }
         catch (Exception ex)
         {
@@ -304,43 +362,85 @@ public class MainViewModel : INotifyPropertyChanged
             var capturedPath = await TurkceRumenceCeviri.Services.Implementations.ScreenCaptureService.CaptureSelectedRegionAsync(screenshotPath);
             if (string.IsNullOrEmpty(capturedPath) || !File.Exists(capturedPath))
             {
-                AssistantResponse = "Ekran g�r�nt�s� yakalanamad�. L�tfen yeniden deneyin.";
+                AssistantResponse = "Ekran görüntüsü yakalanamadı. Lütfen yeniden deneyin.";
                 return;
             }
 
-            // OCR once, detect overall language and append to the corresponding segment
+            // OCR once, then trim and route lines strictly by selected region content
             var (fullText, overallLang) = await _ocrService.ExtractTextAsync(screenshotPath);
             if (string.IsNullOrWhiteSpace(fullText))
             {
-                AssistantResponse = "Se�ili alandan metin okunamad�.";
+                AssistantResponse = "Seçili alandan metin okunamadı.";
                 return;
             }
+            // Decide one side for the whole selection to preserve meaning
+            // Exclude 'ş/Ş' from Turkish to avoid overlap with Romanian 'ș/Ș'
+            var trChars = new HashSet<char>(new[] { 'ğ','Ğ','ı','İ','ç','Ç','ö','Ö','ü','Ü' });
+            var roChars = new HashSet<char>(new[] { 'ă','Ă','â','Â','î','Î','ș','Ș','ț','Ț' });
 
-            // Decide language: prefer strong heuristics; then OCR detected; then heuristic detector
-            string lang;
-            // Prefer Romanian detection first (Romanian diacritics/words are strong signals)
-            if (TurkceRumenceCeviri.Services.Implementations.RomanianNormalizer.IsLikelyRomanian(fullText))
-                lang = "ro";
-            else if (TurkceRumenceCeviri.Services.Implementations.RomanianNormalizer.IsLikelyTurkish(fullText))
-                lang = "tr";
-            else if (!string.IsNullOrWhiteSpace(overallLang))
-                lang = overallLang.ToLowerInvariant();
+            // Normalize OCR-confusable characters for detection (not for display)
+            string detectText = fullText
+                .Replace('ş','ș')
+                .Replace('Ş','Ș')
+                .Replace('ţ','ț')
+                .Replace('Ţ','Ț');
+
+            int trCount = 0, roCount = 0;
+            foreach (var ch in detectText)
+            {
+                if (trChars.Contains(ch)) trCount++;
+                if (roChars.Contains(ch)) roCount++;
+            }
+
+            string decidedLang;
+            if (roCount > 0 && trCount == 0) decidedLang = "ro";
+            else if (trCount > 0 && roCount == 0) decidedLang = "tr";
+            else if (roCount > trCount) decidedLang = "ro"; // mixed: prefer side with more diacritics
+            else if (trCount > roCount) decidedLang = "tr";
             else
-                lang = TurkceRumenceCeviri.Services.Implementations.RomanianNormalizer.DetectLanguageForText(fullText);
+            {
+                // counts equal or zero: prefer word heuristics, then OCR overallLang, then detector
+                if (TurkceRumenceCeviri.Services.Implementations.RomanianNormalizer.IsLikelyRomanian(fullText))
+                    decidedLang = "ro";
+                else if (TurkceRumenceCeviri.Services.Implementations.RomanianNormalizer.IsLikelyTurkish(fullText))
+                    decidedLang = "tr";
+                else if (!string.IsNullOrWhiteSpace(overallLang))
+                    decidedLang = overallLang.ToLowerInvariant();
+                else
+                    decidedLang = TurkceRumenceCeviri.Services.Implementations.RomanianNormalizer.DetectLanguageForText(fullText);
+            }
 
-            if (lang == "tr")
+            // Clean lines: trim, drop empty/decoration-only
+            var parts = fullText.Replace("\r\n", "\n")
+                                .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var sb = new System.Text.StringBuilder();
+            foreach (var line in parts)
+            {
+                var t = line.Trim();
+                if (string.IsNullOrEmpty(t)) continue;
+                bool hasWordChar = false;
+                foreach (var ch in t)
+                {
+                    if (char.IsLetterOrDigit(ch)) { hasWordChar = true; break; }
+                }
+                if (!hasWordChar) continue;
+                sb.AppendLine(t);
+            }
+            var finalBlock = sb.ToString().Trim();
+            if (decidedLang == "ro") finalBlock = TurkceRumenceCeviri.Services.Implementations.RomanianNormalizer.NormalizeRomanian(finalBlock);
+
+            if (decidedLang == "tr")
             {
                 _sessionManager.UpdateLanguage("tr");
                 DetectedLanguage = "TR";
-                TurkishText = string.IsNullOrEmpty(TurkishText) ? fullText : $"{TurkishText}{Environment.NewLine}{fullText}";
+                TurkishText = string.IsNullOrEmpty(TurkishText) ? finalBlock : $"{TurkishText}{Environment.NewLine}{finalBlock}";
                 await PerformTranslation("tr");
             }
             else
             {
-                var normalized = TurkceRumenceCeviri.Services.Implementations.RomanianNormalizer.NormalizeRomanian(fullText);
                 _sessionManager.UpdateLanguage("ro");
                 DetectedLanguage = "RO";
-                RomanianText = string.IsNullOrEmpty(RomanianText) ? normalized : $"{RomanianText}{Environment.NewLine}{normalized}";
+                RomanianText = string.IsNullOrEmpty(RomanianText) ? finalBlock : $"{RomanianText}{Environment.NewLine}{finalBlock}";
                 await PerformTranslation("ro");
             }
 
@@ -348,7 +448,7 @@ public class MainViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Ekran �evirme hatas�: {ex.Message}");
+            Console.WriteLine($"Ekran çevirme hatası: {ex.Message}");
         }
     }
 
@@ -386,7 +486,7 @@ public class MainViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"�eviri hatas�: {ex.Message}");
+            Console.WriteLine($"Çeviri hatası: {ex.Message}");
         }
     }
 
@@ -397,6 +497,8 @@ public class MainViewModel : INotifyPropertyChanged
         TranslatedRomanian = "";
         TranslatedTurkish = "";
         AssistantResponse = "";
+        TranslatedTurkishAssistant = "";
+        TranslatedRomanianAssistant = "";
         _manualTranslateCts?.Cancel();
         _manualTranslateCts?.Dispose();
     }

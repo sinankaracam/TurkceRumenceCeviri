@@ -19,6 +19,23 @@ public static class ScreenCaptureService
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
 
+            // Clear clipboard to avoid picking previously copied content
+            try
+            {
+                if (Application.Current != null)
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        try { Clipboard.Clear(); } catch { }
+                    });
+                }
+                else
+                {
+                    try { Clipboard.Clear(); } catch { }
+                }
+            }
+            catch { }
+
             // Start Windows snipping UI (preferred: explorer URI)
             var started = false;
             try

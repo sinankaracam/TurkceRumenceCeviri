@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Text.RegularExpressions;
 
 namespace TurkceRumenceCeviri.Services.Implementations;
@@ -14,43 +14,120 @@ public static class RomanianNormalizer
         var trScore = 0;
 
         // Diacritics scoring using sets (avoids duplicate-case issues)
-        var roChars = new HashSet<char>(new[] { '?','?','â','Â','î','Î','?','?','?','?' });
-        var trChars = new HashSet<char>(new[] { 'ğ','Ğ','ı','İ','ş','Ş','ç','Ç','ö','Ö','ü','Ü' });
+        var roChars = new HashSet<char>(new[] { 'Äƒ','Ä‚','Ã¢','Ã‚','Ã®','Ã','È›','Èš' });
+        var trChars = new HashSet<char>(new[] { 'ÄŸ','Ä','Ä±','Ä°','Ã¶','Ã–','Ã¼','Ãœ' });
+
+        var hasRoDiacritic = false;
+        var hasTrDiacritic = false;
         foreach (var ch in text)
         {
-            if (roChars.Contains(ch)) roScore += 3;
-            if (trChars.Contains(ch)) trScore += 3;
+            if (roChars.Contains(ch)) { roScore += 3; hasRoDiacritic = true; }
+            if (trChars.Contains(ch)) { trScore += 3; hasTrDiacritic = true; }
         }
+        // Absolute rule kept minimal: presence of 'È›/Èš' strongly indicates Romanian
+        if (text.IndexOf('È›') >= 0 || text.IndexOf('Èš') >= 0)
+            return "ro";
+        // Hard rule: if any Romanian diacritic appears, treat as Romanian (user preference)
+        if (hasRoDiacritic && !hasTrDiacritic) return "ro";
+        if (hasTrDiacritic && !hasRoDiacritic) return "tr";
 
         // Romanian common words (exclude ambiguous words like 'din')
-        var roWords = new[] { "?i", "este", "sunt", "în", "cu", "la", "de", "?sta", "acesta", "românia", "bucure?ti" };
+        var roWords = new[] {
+            // with diacritics
+            "È™i","este","sunt","Ã®n","cu","la","de","Äƒsta","acesta","romÃ¢nia","bucureÈ™ti",
+            "bunÄƒ","dimineaÈ›a","cine","eÈ™ti","mulÈ›umesc","te","rog","da","nu","fereastrÄƒ","coleg","grupÄƒ",
+            // common OCR no-diacritic variants
+            "si","este","sunt","in","cu","la","de","asta","acesta","romania","bucuresti",
+            "buna","dimineata","cine","esti","multumesc","te","rog","da","nu","fereastra","coleg","grupa"
+        };
         foreach (var w in roWords)
             roScore += CountOccurrences(text, w) * 2;
 
         // Turkish common words (exclude ambiguous 'de'/'da')
-        var trWords = new[] { "ve", "bir", "için", "çok", "ama", "ile", "şu", "bu" };
+        var trWords = new[] { "ve", "bir", "iÃ§in", "Ã§ok", "ama", "ÅŸu", "bu" };
         foreach (var w in trWords)
             trScore += CountOccurrences(text, w) * 2;
 
-        // Heuristics: punctuation patterns
-        if (Regex.IsMatch(text, "\\b(Ş|Ç|İ)[a-z]")) trScore += 1; // Turkish uppercase with accents
-        if (Regex.IsMatch(text, "\\b(?|?|?|Â|Î)[a-z]")) roScore += 1; // Romanian uppercase with accents
+        // Majority decision by token counts (words with diacritics or in language-specific lists)
+        static string NormalizeForRo(string s)
+        {
+            return s
+                .Replace('ÅŸ','È™')
+                .Replace('Å','È˜')
+                .Replace('Å£','È›')
+                .Replace('Å¢','Èš')
+                .ToLowerInvariant();
+        }
+        var tokens = System.Text.RegularExpressions.Regex.Matches(text, "\\p{L}+", RegexOptions.CultureInvariant);
+        int roToken = 0, trToken = 0;
+        var roWordSet = new HashSet<string>(roWords, StringComparer.OrdinalIgnoreCase);
+        var trWordSet = new HashSet<string>(trWords, StringComparer.OrdinalIgnoreCase);
+        foreach (System.Text.RegularExpressions.Match m in tokens)
+        {
+            var t = m.Value;
+            var tLower = t.ToLowerInvariant();
+            var tRo = NormalizeForRo(t);
+            bool roHit = false;
+            bool trHit = false;
+            // diacritics based token hit
+            foreach (var ch in t)
+            {
+                if (roChars.Contains(ch)) { roHit = true; break; }
+            }
+            if (!roHit)
+            {
+                // word list hit (handle OCR variants via NormalizeForRo)
+                if (roWordSet.Contains(tRo)) roHit = true;
+            }
+            // Turkish hit: diacritics or word list
+            foreach (var ch in t)
+            {
+                if (trChars.Contains(ch)) { trHit = true; break; }
+            }
+            if (!trHit)
+            {
+                if (trWordSet.Contains(tLower)) trHit = true;
+            }
+            if (roHit && !trHit) roToken++;
+            else if (trHit && !roHit) trToken++;
+        }
+        if (roToken != trToken)
+            return roToken > trToken ? "ro" : "tr";
 
-        return roScore >= trScore ? "ro" : "tr";
+        // Heuristics: punctuation patterns
+        if (Regex.IsMatch(text, "\\b(Ã‡|Ä°)[a-z]")) trScore += 1; // Turkish uppercase with accents (exclude Å to avoid overlap with È˜)
+        if (Regex.IsMatch(text, "\\b(È˜|Èš|Ä‚|Ã‚|Ã)[a-z]")) roScore += 1; // Romanian uppercase with accents
+
+        if (roScore != trScore) return roScore > trScore ? "ro" : "tr";
+
+        // Fallback: frequency heuristic based on language-specific letters
+        int roFreq = 0, trFreq = 0;
+        foreach (var ch in text)
+        {
+            if (roChars.Contains(ch)) roFreq++;
+            if (trChars.Contains(ch)) trFreq++;
+        }
+        // Strong majority rule to avoid single stray characters tipping the scale
+        if (roFreq >= 2 && trFreq <= 1) return "ro";
+        if (trFreq >= 2 && roFreq <= 1) return "tr";
+        if (roFreq != trFreq) return roFreq > trFreq ? "ro" : "tr";
+
+        // Last resort: default to Turkish
+        return "tr";
     }
 
     public static bool IsLikelyTurkish(string text)
     {
         if (string.IsNullOrEmpty(text)) return false;
-        var trChars = new HashSet<char>(new[] { 'ğ','Ğ','ı','İ','ş','Ş','ç','Ç','ö','Ö','ü','Ü' });
+        var trChars = new HashSet<char>(new[] { 'ÄŸ','Ä','Ä±','Ä°','Ã§','Ã‡','Ã¶','Ã–','Ã¼','Ãœ' });
         foreach (var ch in text)
             if (trChars.Contains(ch)) return true;
         // Use Turkish-unique function words and common verbs; avoid shared proper nouns
         var trWords = new[] {
-            "ve","bir","için","çünkü","ancak","fakat","ama","ile","şimdi","her","hiç",
-            "nasıl","neden","değil","değildir","yok","var","daha","en","çok","az",
-            "mesela","örneğin","bence","böyle","şöyle","burada","orada","nerede",
-            "geldi","gidiyor","yapıyorum","yapıyoruz","konuşuyor","ediyorum","oluyor","olacak"
+            "ve","bir","iÃ§in","Ã§Ã¼nkÃ¼","ancak","fakat","ama","ile","ÅŸimdi","her","hiÃ§",
+            "nasÄ±l","neden","deÄŸil","deÄŸildir","yok","var","daha","en","Ã§ok","az",
+            "mesela","Ã¶rneÄŸin","bence","bÃ¶yle","ÅŸÃ¶yle","burada","orada","nerede",
+            "geldi","gidiyor","yapÄ±yorum","yapÄ±yoruz","konuÅŸuyor","ediyorum","oluyor","olacak"
         };
         foreach (var w in trWords)
             if (Regex.IsMatch(text, $"\\b{Regex.Escape(w)}\\b", RegexOptions.IgnoreCase)) return true;
@@ -60,14 +137,14 @@ public static class RomanianNormalizer
     public static bool IsLikelyRomanian(string text)
     {
         if (string.IsNullOrEmpty(text)) return false;
-        var roChars = new HashSet<char>(new[] { '?','?','â','Â','î','Î','?','?','?','?' });
+        var roChars = new HashSet<char>(new[] { 'Äƒ','Ä‚','Ã¢','Ã‚','Ã®','Ã','È™','È˜','È›','Èš' });
         foreach (var ch in text)
             if (roChars.Contains(ch)) return true;
         // Romanian-unique function words and common verbs; avoid shared proper nouns
         var roWords = new[] {
-            "?i","este","sunt","în","din","cu","la","de","pe","care","fiecare",
-            "nu","da","foarte","mai","cel","cea","acesta","aceasta","ace?tia","acelea",
-            "merge","vine","vorbe?te","fac","facem","se","întâmpl?","va","fie"
+            "È™i","este","sunt","Ã®n","din","cu","la","de","pe","care","fiecare",
+            "nu","da","foarte","mai","cel","cea","acesta","aceasta","aceÈ™tia","acelea",
+            "merge","vine","vorbeÈ™te","fac","facem","se","Ã®ntÃ¢mplÄƒ","va","fie"
         };
         foreach (var w in roWords)
             if (Regex.IsMatch(text, $"\\b{Regex.Escape(w)}\\b", RegexOptions.IgnoreCase)) return true;
@@ -80,11 +157,11 @@ public static class RomanianNormalizer
         if (string.IsNullOrEmpty(text)) return text;
         var normalized = text
             .Replace("`", "'")
-            .Replace("”", "\"")
-            .Replace("“", "\"")
-            .Replace("„", "\"")
-            .Replace("–", "-")
-            .Replace("—", "-");
+            .Replace("â€", "\"")
+            .Replace("â€œ", "\"")
+            .Replace("â€", "\"")
+            .Replace("â€“", "-")
+            .Replace("â€”", "-");
         return normalized;
     }
 
