@@ -1,0 +1,168 @@
+﻿<Window x:Class="TurkceRumenceCeviri.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TurkceRumenceCeviri"
+        mc:Ignorable="d"
+        Title="Türkçe - Rumence Çeviri" Height="1069" Width="1434" Background="#F8F9FA">
+    <Grid>
+        <StackPanel Margin="20">
+            <!-- Header -->
+            <Grid Margin="0,0,0,20">
+                <StackPanel VerticalAlignment="Top">
+                    <TextBlock Text="Türkçe - Rumence Çeviri" FontSize="32" FontWeight="Bold" Foreground="#1A1A1A"/>
+                    <TextBlock Text="© 2025 - SMKRCM" FontSize="12" Foreground="#666666" Margin="0,5,0,0"/>
+                </StackPanel>
+                <StackPanel VerticalAlignment="Top" HorizontalAlignment="Right" Orientation="Horizontal">
+                    <TextBlock Text="Algılanan Dil: " FontSize="14" FontWeight="Bold" Foreground="#0078D4" Margin="0,0,10,0"/>
+                    <TextBlock Text="{Binding DetectedLanguage}" FontSize="14" FontWeight="Bold" Foreground="#0078D4"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Action Buttons -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                <Button x:Name="StartButton" Content="🎤 Başlat" Command="{Binding StartListeningCommand}" Width="150" Height="45" Background="White" BorderBrush="#CCCCCC" BorderThickness="2" FontSize="14" FontWeight="Bold" Margin="0,0,15,0"/>
+                <Button x:Name="StopButton" Content="☐ Durdur" Command="{Binding StopListeningCommand}" Width="150" Height="45" Background="White" BorderBrush="#CCCCCC" BorderThickness="2" FontSize="14" FontWeight="Bold" Margin="0,0,15,0"/>
+                <!-- Global speak removed; per-translation speak buttons are below -->
+                <Button x:Name="OcrButton" Content="💻 Ekrandan Çevir" Command="{Binding ExtractFromScreenCommand}" Width="150" Height="45" Background="White" BorderBrush="#CCCCCC" BorderThickness="2" FontSize="14" FontWeight="Bold"/>
+            </StackPanel>
+
+            <!-- Main Content Grid -->
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="1*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Left Side: Konuşulan Metin -->
+                <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" BorderBrush="#CCCCCC" BorderThickness="2" CornerRadius="10" Background="White" Margin="0,0,10,0" Padding="20">
+                    <StackPanel>
+                        <TextBlock Text="Konuşulan Metin" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,0,0,15"/>
+
+                        <!-- Input Fields in two columns with clear headers -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="150"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Headers -->
+                            <Border Grid.Column="0" Grid.Row="0" Background="#E3F2FD" CornerRadius="6" Padding="8" Margin="0,0,6,8" BorderBrush="#90CAF9" BorderThickness="1">
+                                <TextBlock Text="RO • Rumence (Giriş)" FontWeight="Bold" Foreground="#1565C0"/>
+                            </Border>
+                            <Border Grid.Column="1" Grid.Row="0" Background="#E8F5E9" CornerRadius="6" Padding="8" Margin="6,0,0,8" BorderBrush="#A5D6A7" BorderThickness="1">
+                                <TextBlock Text="TR • Türkçe (Giriş)" FontWeight="Bold" Foreground="#2E7D32"/>
+                            </Border>
+
+                            <!-- Textboxes -->
+                            <TextBox x:Name="RomanianInputBox" Grid.Column="0" Grid.Row="1" TextWrapping="Wrap" AcceptsReturn="True" Padding="12" Background="#F5F5F5" BorderBrush="#DCDCDC" BorderThickness="1" Foreground="#666666" FontSize="13" Text="{Binding RomanianText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,6,0"/>
+                            <TextBox x:Name="TurkishInputBox" Grid.Column="1" Grid.Row="1" TextWrapping="Wrap" AcceptsReturn="True" Padding="12" Background="#F5F5F5" BorderBrush="#DCDCDC" BorderThickness="1" Foreground="#666666" FontSize="13" Text="{Binding TurkishText, UpdateSourceTrigger=PropertyChanged}" Margin="6,0,0,0"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Right Side: Yapay Zekaya Sor -->
+                <Border Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" BorderBrush="#FF4444" BorderThickness="3" CornerRadius="10" Background="White" Margin="10,0,0,0" Padding="20">
+                    <StackPanel>
+                        <TextBlock Text="Yapay Zekaya Sor" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,0,0,15"/>
+
+                        <!-- Query Tabs -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15" TextBlock.FontSize="12">
+                            <Button Content="Metni özetle" Width="Auto" Padding="12,6" Background="#F0F0F0" BorderBrush="#CCCCCC" BorderThickness="1" Margin="0,0,15,0"/>
+                            <Button Content="Soruları çıkar" Width="Auto" Padding="12,6" Background="#F0F0F0" BorderBrush="#CCCCCC" BorderThickness="1" Margin="0,0,15,0"/>
+                            <Button Content="Kelime listesi" Width="Auto" Padding="12,6" Background="#F0F0F0" BorderBrush="#CCCCCC" BorderThickness="1" Margin="0,0,15,0"/>
+                            <Button Content="Telaffuz Et" Width="Auto" Padding="12,6" Background="#F0F0F0" BorderBrush="#CCCCCC" BorderThickness="1"/>
+                        </StackPanel>
+
+                        <!-- Query Input -->
+                        <TextBox x:Name="QueryBox" Height="120" TextWrapping="Wrap" AcceptsReturn="True" Padding="12" Background="#F5F5F5" BorderBrush="#DCDCDC" BorderThickness="1" Foreground="#999999" FontSize="13" Text="Sorunuzu yazın..." Margin="0,0,0,15"/>
+
+                        <!-- Query Button -->
+                        <Button Content="Sor" Command="{Binding AskAssistantCommand}" Height="50" Background="#FF4444" Foreground="White" FontSize="16" FontWeight="Bold" Cursor="Hand"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Bottom Section: Çeviri ve Asistan Cevabı -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Translation Results -->
+                <Border Grid.Column="0" BorderBrush="#CCCCCC" BorderThickness="2" CornerRadius="10" Background="White" Margin="0,0,10,0" Padding="20">
+                    <StackPanel>
+                        <TextBlock Text="Çeviri" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,0,0,15"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="120"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="120"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Headers -->
+                            <Border Grid.Column="0" Grid.Row="0" Background="#E8F5E9" CornerRadius="6" Padding="8" Margin="0,0,6,8" BorderBrush="#A5D6A7" BorderThickness="1">
+                                <TextBlock Text="TR • Türkçe (Çeviri)" FontWeight="Bold" Foreground="#2E7D32"/>
+                            </Border>
+                            <TextBox Grid.Column="0" Grid.Row="1" TextWrapping="Wrap" Padding="12" Background="#E8F5E9" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="13" Text="{Binding TranslatedTurkish, Mode=OneWay}" Margin="0,0,6,12"/>
+                            <Button Grid.Column="0" Grid.Row="2" Content="🔊 Türkçe Çeviriyi Seslendir" Command="{Binding SpeakTurkishTranslationCommand}" Height="35" Background="#E8F5E9" BorderBrush="#A5D6A7" BorderThickness="1" Margin="0,0,6,12"/>
+
+                            <Border Grid.Column="1" Grid.Row="0" Background="#E3F2FD" CornerRadius="6" Padding="8" Margin="6,0,0,8" BorderBrush="#90CAF9" BorderThickness="1">
+                                <TextBlock Text="RO • Rumence (Çeviri)" FontWeight="Bold" Foreground="#1565C0"/>
+                            </Border>
+                            <TextBox Grid.Column="1" Grid.Row="1" TextWrapping="Wrap" Padding="12" Background="#E3F2FD" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="13" Text="{Binding TranslatedRomanian, Mode=OneWay}" Margin="6,0,0,12"/>
+                            <Button Grid.Column="1" Grid.Row="2" Content="🔊 Rumence Çeviriyi Seslendir" Command="{Binding SpeakRomanianTranslationCommand}" Height="35" Background="#E3F2FD" BorderBrush="#90CAF9" BorderThickness="1" Margin="6,0,0,12"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Assistant Response -->
+                <Border Grid.Column="1" BorderBrush="#CCCCCC" BorderThickness="2" CornerRadius="10" Background="White" Margin="10,0,0,0" Padding="20">
+                    <StackPanel>
+                        <TextBlock Text="Asistan Cevabı" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,0,0,15"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="120"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="120"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Headers -->
+                            <Border Grid.Column="0" Grid.Row="0" Background="#E3F2FD" CornerRadius="6" Padding="8" Margin="0,0,6,8" BorderBrush="#90CAF9" BorderThickness="1">
+                                <TextBlock Text="RO • Rumence (Asistan)" FontWeight="Bold" Foreground="#1565C0"/>
+                            </Border>
+                            <TextBox Grid.Column="0" Grid.Row="1" TextWrapping="Wrap" Padding="12" Background="#E3F2FD" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="13" Text="{Binding AssistantResponse, Mode=OneWay}" Margin="0,0,6,12"/>
+
+                            <Border Grid.Column="1" Grid.Row="0" Background="#E8F5E9" CornerRadius="6" Padding="8" Margin="6,0,0,8" BorderBrush="#A5D6A7" BorderThickness="1">
+                                <TextBlock Text="TR • Türkçe (Asistan)" FontWeight="Bold" Foreground="#2E7D32"/>
+                            </Border>
+                            <TextBox Grid.Column="1" Grid.Row="1" TextWrapping="Wrap" Padding="12" Background="#E8F5E9" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="13"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </Grid>
+</Window>
