@@ -34,7 +34,7 @@ public static class RomanianNormalizer
 
         // Heuristics: punctuation patterns
         if (Regex.IsMatch(text, "\\b(Þ|Ç|Ý)[a-z]")) trScore += 1; // Turkish uppercase with accents
-        if (Regex.IsMatch(text, "\\b(?|?)[a-z]")) roScore += 1;
+        if (Regex.IsMatch(text, "\\b(?|?|?|Â|Î)[a-z]")) roScore += 1; // Romanian uppercase with accents
 
         return roScore >= trScore ? "ro" : "tr";
     }
