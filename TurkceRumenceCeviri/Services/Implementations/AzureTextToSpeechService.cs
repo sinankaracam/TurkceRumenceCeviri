@@ -14,8 +14,8 @@ public class AzureTextToSpeechService : ITextToSpeechService
     public AzureTextToSpeechService(string speechKey, string speechRegion)
     {
         _config = SpeechConfig.FromSubscription(speechKey, speechRegion);
-        //var audio = AudioConfig.FromDefaultSpeakerOutput();
-        //_synthesizer = new SpeechSynthesizer(_config, audio);
+        var audio = AudioConfig.FromDefaultSpeakerOutput();
+        _synthesizer = new SpeechSynthesizer(_config, audio);
         _isPlaying = false;
     }
 
@@ -33,8 +33,22 @@ public class AzureTextToSpeechService : ITextToSpeechService
             };
             _config.SpeechSynthesisLanguage = GetLocale(language);
             _config.SpeechSynthesisVoiceName = voiceName;
-            _synthesizer = new SpeechSynthesizer(_config);
-            var result = await _synthesizer.SpeakTextAsync(text);
+            // update voice and speak
+            if (_synthesizer is null)
+            {
+                var audio = AudioConfig.FromDefaultSpeakerOutput();
+                _synthesizer = new SpeechSynthesizer(_config, audio);
+            }
+            SpeechSynthesisResult result;
+            if ((language ?? "").ToLower() == "ro")
+            {
+                var ssml = $"<speak version='1.0' xml:lang='{GetLocale(language)}'><voice name='{voiceName}'>{System.Net.WebUtility.HtmlEncode(text)}</voice></speak>";
+                result = await _synthesizer.SpeakSsmlAsync(ssml);
+            }
+            else
+            {
+                result = await _synthesizer.SpeakTextAsync(text);
+            }
 
 
             if (result.Reason != ResultReason.SynthesizingAudioCompleted)
@@ -44,8 +58,6 @@ public class AzureTextToSpeechService : ITextToSpeechService
         }
         finally
         {
-            _synthesizer.Dispose();
-            _synthesizer = null;
             _isPlaying = false;
         }
     }

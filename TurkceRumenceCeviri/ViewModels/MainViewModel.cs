@@ -338,13 +338,11 @@ public class MainViewModel : INotifyPropertyChanged
         {
             var original = await _aiService.AnswerQuestionAsync(AssistantQuestion ?? string.Empty, context, language);
             AssistantResponse = original;
-            // produce counterpart translation for the other assistant box
-            var targetLang = language == "tr" ? "ro" : "tr";
-            var translated = await _translationService.TranslateAsync(original, language, targetLang);
-            if (language == "tr")
-                TranslatedRomanianAssistant = translated;
-            else
-                TranslatedTurkishAssistant = translated;
+            // translate to both languages for display
+            var trText = language == "tr" ? original : await _translationService.TranslateAsync(original, language, "tr");
+            var roText = language == "ro" ? original : await _translationService.TranslateAsync(original, language, "ro");
+            TranslatedTurkishAssistant = trText;
+            TranslatedRomanianAssistant = roText;
         }
         catch (Exception ex)
         {
