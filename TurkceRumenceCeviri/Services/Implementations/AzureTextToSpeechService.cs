@@ -1,4 +1,5 @@
 using Microsoft.CognitiveServices.Speech;
+using Microsoft.CognitiveServices.Speech.Audio;
 
 namespace TurkceRumenceCeviri.Services.Implementations;
 
@@ -13,7 +14,8 @@ public class AzureTextToSpeechService : ITextToSpeechService
     public AzureTextToSpeechService(string speechKey, string speechRegion)
     {
         _config = SpeechConfig.FromSubscription(speechKey, speechRegion);
-        _synthesizer = new SpeechSynthesizer(_config);
+        var audio = AudioConfig.FromDefaultSpeakerOutput();
+        _synthesizer = new SpeechSynthesizer(_config, audio);
         _isPlaying = false;
     }
 

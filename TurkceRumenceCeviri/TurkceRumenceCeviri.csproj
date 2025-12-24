@@ -32,4 +32,11 @@
     </None>
   </ItemGroup>
 
+  <!-- Copy local Tesseract-OCR runtime folder to output (Debug/Release) -->
+  <ItemGroup>
+    <None Include="Tesseract-OCR\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
