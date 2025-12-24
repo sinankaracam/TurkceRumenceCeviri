@@ -5,7 +5,7 @@ namespace TurkceRumenceCeviri.Services.Implementations;
 
 public class AzureTextToSpeechService : ITextToSpeechService
 {
-    private readonly SpeechSynthesizer _synthesizer;
+    private SpeechSynthesizer _synthesizer;
     private readonly SpeechConfig _config;
     private bool _isPlaying;
 
@@ -14,8 +14,8 @@ public class AzureTextToSpeechService : ITextToSpeechService
     public AzureTextToSpeechService(string speechKey, string speechRegion)
     {
         _config = SpeechConfig.FromSubscription(speechKey, speechRegion);
-        var audio = AudioConfig.FromDefaultSpeakerOutput();
-        _synthesizer = new SpeechSynthesizer(_config, audio);
+        //var audio = AudioConfig.FromDefaultSpeakerOutput();
+        //_synthesizer = new SpeechSynthesizer(_config, audio);
         _isPlaying = false;
     }
 
@@ -33,9 +33,10 @@ public class AzureTextToSpeechService : ITextToSpeechService
             };
             _config.SpeechSynthesisLanguage = GetLocale(language);
             _config.SpeechSynthesisVoiceName = voiceName;
-            using var localSynth = new SpeechSynthesizer(_config);
-            var result = await localSynth.SpeakTextAsync(text);
-            
+            _synthesizer = new SpeechSynthesizer(_config);
+            var result = await _synthesizer.SpeakTextAsync(text);
+
+
             if (result.Reason != ResultReason.SynthesizingAudioCompleted)
             {
                 Console.WriteLine($"Seslendir hatasý: {result.Reason}");
@@ -43,6 +44,8 @@ public class AzureTextToSpeechService : ITextToSpeechService
         }
         finally
         {
+            _synthesizer.Dispose();
+            _synthesizer = null;
             _isPlaying = false;
         }
     }
@@ -50,6 +53,10 @@ public class AzureTextToSpeechService : ITextToSpeechService
     public async Task StopAsync()
     {
         _isPlaying = false;
+        if (_synthesizer is not null)
+        {
+            await _synthesizer.StopSpeakingAsync();
+        }
         await Task.CompletedTask;
     }
 
