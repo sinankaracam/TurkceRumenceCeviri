@@ -5,22 +5,52 @@ namespace TurkceRumenceCeviri.Services.Implementations;
 
 public class AzureTextToSpeechService : ITextToSpeechService
 {
-    private SpeechSynthesizer _synthesizer;
-    private readonly SpeechConfig _config;
+    private SpeechSynthesizer? _synthesizer;
+    private readonly SpeechConfig? _config;
     private bool _isPlaying;
+    private readonly bool _enabled;
 
     public bool IsPlaying => _isPlaying;
 
     public AzureTextToSpeechService(string speechKey, string speechRegion)
     {
-        _config = SpeechConfig.FromSubscription(speechKey, speechRegion);
-        var audio = AudioConfig.FromDefaultSpeakerOutput();
-        _synthesizer = new SpeechSynthesizer(_config, audio);
-        _isPlaying = false;
+        // If no key provided, disable TTS to avoid exceptions during startup.
+        if (string.IsNullOrWhiteSpace(speechKey))
+        {
+            TurkceRumenceCeviri.Utilities.DebugHelper.LogWarning("Azure Speech synthesis key not provided - TTS disabled.");
+            _config = null;
+            _synthesizer = null;
+            _isPlaying = false;
+            _enabled = false;
+            return;
+        }
+
+        try
+        {
+            _config = SpeechConfig.FromSubscription(speechKey, speechRegion);
+            var audio = AudioConfig.FromDefaultSpeakerOutput();
+            _synthesizer = new SpeechSynthesizer(_config, audio);
+            _isPlaying = false;
+            _enabled = true;
+        }
+        catch (Exception ex)
+        {
+            TurkceRumenceCeviri.Utilities.DebugHelper.LogWarning($"Failed to initialize AzureTextToSpeechService: {ex.Message}");
+            _config = null;
+            _synthesizer = null;
+            _isPlaying = false;
+            _enabled = false;
+        }
     }
 
     public async Task SpeakAsync(string text, string language)
     {
+        if (!_enabled || _config is null)
+        {
+            // TTS disabled - nothing to do
+            return;
+        }
+
         try
         {
             _isPlaying = true;
@@ -31,29 +61,39 @@ public class AzureTextToSpeechService : ITextToSpeechService
                 "ro" => "ro-RO-AlinaNeural",
                 _ => "tr-TR-AysuNeural"
             };
+
             _config.SpeechSynthesisLanguage = GetLocale(language);
             _config.SpeechSynthesisVoiceName = voiceName;
-            // update voice and speak
+
+            // ensure synthesizer exists
             if (_synthesizer is null)
             {
-                var audio = AudioConfig.FromDefaultSpeakerOutput();
-                _synthesizer = new SpeechSynthesizer(_config, audio);
+                try
+                {
+                    var audio = AudioConfig.FromDefaultSpeakerOutput();
+                    _synthesizer = new SpeechSynthesizer(_config, audio);
+                }
+                catch (Exception ex)
+                {
+                    TurkceRumenceCeviri.Utilities.DebugHelper.LogWarning($"Failed to create SpeechSynthesizer at speak time: {ex.Message}");
+                    return;
+                }
             }
+
             SpeechSynthesisResult result;
             if ((language ?? "").ToLower() == "ro")
             {
                 var ssml = $"<speak version='1.0' xml:lang='{GetLocale(language)}'><voice name='{voiceName}'>{System.Net.WebUtility.HtmlEncode(text)}</voice></speak>";
-                result = await _synthesizer.SpeakSsmlAsync(ssml);
+                result = await _synthesizer.SpeakSsmlAsync(ssml).ConfigureAwait(false);
             }
             else
             {
-                result = await _synthesizer.SpeakTextAsync(text);
+                result = await _synthesizer.SpeakTextAsync(text).ConfigureAwait(false);
             }
-
 
             if (result.Reason != ResultReason.SynthesizingAudioCompleted)
             {
-                Console.WriteLine($"Seslendir hatasý: {result.Reason}");
+                TurkceRumenceCeviri.Utilities.DebugHelper.LogWarning($"Seslendir hatasý: {result.Reason}");
             }
         }
         finally
@@ -65,10 +105,16 @@ public class AzureTextToSpeechService : ITextToSpeechService
     public async Task StopAsync()
     {
         _isPlaying = false;
-        if (_synthesizer is not null)
+        if (!_enabled || _synthesizer is null)
         {
-            await _synthesizer.StopSpeakingAsync();
+            return;
         }
+
+        try
+        {
+            await _synthesizer.StopSpeakingAsync().ConfigureAwait(false);
+        }
+        catch { }
         await Task.CompletedTask;
     }
 

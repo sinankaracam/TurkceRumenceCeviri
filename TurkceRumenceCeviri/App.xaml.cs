@@ -13,15 +13,27 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        var envPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".env");
-        // DotEnv.Core kullanımı: .env dosyasını yükle ve değerleri Environment değişkenlerine uygula
-        var loader = new EnvLoader();
-        loader.AddEnvFile(envPath)
-              .Load();
-        DebugHelper.LogSuccess($".env yüklendi: {envPath}");
-        DebugHelper.LogMessage($"AZURE_TRANSLATOR_KEY present: {(!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("AZURE_TRANSLATOR_KEY")))}");
-        DebugHelper.LogMessage($"AZURE_SPEECH_KEY present: {(!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("AZURE_SPEECH_KEY")))}");
+        // Try to load persisted settings early so environment variables can be applied before services are constructed
+        DebugHelper.LogMessage("Attempting to load persisted settings (user.settings.dat) before configuration.", "BOOT");
+        try
+        {
+            var persisted = LicenseStorage.Load();
+            if (persisted != null)
+            {
+                DebugHelper.LogMessage("Applying persisted settings to environment (early load).", "BOOT");
+                if (!string.IsNullOrEmpty(persisted.TranslatorKey)) Environment.SetEnvironmentVariable("AZURE_TRANSLATOR_KEY", persisted.TranslatorKey);
+                if (!string.IsNullOrEmpty(persisted.SpeechKey)) Environment.SetEnvironmentVariable("AZURE_SPEECH_KEY", persisted.SpeechKey);
+                if (!string.IsNullOrEmpty(persisted.GroqKey)) Environment.SetEnvironmentVariable("GROQ_API_KEY", persisted.GroqKey);
+                if (!string.IsNullOrEmpty(persisted.LicenseKey)) Environment.SetEnvironmentVariable("LISANS_KEY", persisted.LicenseKey);
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugHelper.LogWarning($"Early load of persisted settings failed: {ex.Message}");
+        }
 
+        // ConfigService will load persisted settings (user.settings.dat) and apply environment variables
+        DebugHelper.LogMessage("ConfigService will load persisted settings if available.", "BOOT");
 
         // Azure konfigürasyonunu yükle (.env dosyasından veya environment variables'dan)
         // NOT: Artık sadece 2 Azure hizmeti kullanılıyor!

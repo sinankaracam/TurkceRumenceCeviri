@@ -1,4 +1,3 @@
-using DotEnv.Core;
 using TurkceRumenceCeviri.Configuration;
 using TurkceRumenceCeviri.Utilities;
 
@@ -10,14 +9,14 @@ public class ConfigService : IConfigService
 
     public ConfigService()
     {
-        LoadEnv();
+        LoadFromPersisted();
         Current = AzureConfig.LoadFromEnvironment();
         DebugHelper.LogMessage(Current.ToString(), "CONFIG");
     }
 
     public void Reload()
     {
-        LoadEnv();
+        LoadFromPersisted();
         Current = AzureConfig.LoadFromEnvironment();
         DebugHelper.LogMessage("Configuration reloaded", "CONFIG");
     }
@@ -25,32 +24,45 @@ public class ConfigService : IConfigService
     public void Validate()
     {
         // AzureConfig.LoadFromEnvironment çaðrýsý zaten validate tetikliyor
-        // Burada ek kontrolleri koyabilirsiniz
     }
 
-    private void LoadEnv()
+    private void LoadFromPersisted()
     {
-        var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        var candidates = new List<string>
+        try
         {
-            System.IO.Path.Combine(baseDir, ".env"),
-            // Project directory
-            System.IO.Path.Combine(baseDir, "..", "..", "..", ".env"),
-            // Solution root (one more up)
-            System.IO.Path.Combine(baseDir, "..", "..", "..", "..", ".env"),
-        };
+            var persisted = LicenseStorage.Load();
+            if (persisted == null)
+            {
+                DebugHelper.LogWarning("No persisted settings found (user.settings.dat).");
+                return;
+            }
 
-        string? existing = candidates.Select(p => System.IO.Path.GetFullPath(p))
-                                     .FirstOrDefault(System.IO.File.Exists);
+            var hwid = HardwareIdProvider.GetHardwareId();
+            var currentDevice = DeviceCodeGenerator.CreateDeviceCode(hwid);
+            if (string.IsNullOrEmpty(persisted.DeviceCode) || !string.Equals(persisted.DeviceCode, currentDevice, StringComparison.Ordinal))
+            {
+                DebugHelper.LogWarning("Persisted settings found but device code does not match current device.");
+                return;
+            }
 
-        if (existing is null)
-        {
-            DebugHelper.LogWarning(".env dosyasý bulunamadý. Ortam deðiþkenleri OS üzerinden ayarlanmýþ olmalý.");
-            return;
+            var act = new TurkceRumenceCeviri.Services.ActivationService();
+            if (string.IsNullOrEmpty(persisted.LicenseKey) || !act.ValidateActivationKey(currentDevice, persisted.LicenseKey))
+            {
+                DebugHelper.LogWarning("Persisted license missing or invalid for this device.");
+                return;
+            }
+
+            // apply to environment so AzureConfig.LoadFromEnvironment picks them up
+            if (!string.IsNullOrEmpty(persisted.TranslatorKey)) Environment.SetEnvironmentVariable("AZURE_TRANSLATOR_KEY", persisted.TranslatorKey);
+            if (!string.IsNullOrEmpty(persisted.SpeechKey)) Environment.SetEnvironmentVariable("AZURE_SPEECH_KEY", persisted.SpeechKey);
+            if (!string.IsNullOrEmpty(persisted.GroqKey)) Environment.SetEnvironmentVariable("GROQ_API_KEY", persisted.GroqKey);
+            if (!string.IsNullOrEmpty(persisted.LicenseKey)) Environment.SetEnvironmentVariable("LISANS_KEY", persisted.LicenseKey);
+
+            DebugHelper.LogMessage("Applied persisted settings from user.settings.dat (device matched).");
         }
-
-        var loader = new EnvLoader();
-        loader.AddEnvFile(existing).Load();
-        DebugHelper.LogSuccess($".env yüklendi: {existing}");
+        catch (Exception ex)
+        {
+            DebugHelper.LogWarning($"Failed to load persisted settings: {ex.Message}");
+        }
     }
 }

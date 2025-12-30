@@ -26,11 +26,22 @@
   </ItemGroup>
 
   <!-- .env dosyasını output dizinine kopyala -->
-  <ItemGroup>
-    <None Update=".env">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+
+  <!-- Copy license-keys.txt to output only for Debug builds (so developers can test large lists).
+       Release builds will NOT include this file, keeping production artifacts clean. -->
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <None Update="license-keys.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <None Update="license-keys-hashes.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  
+  <!-- Also copy license-keys-hashes.txt to Release output so release validation can use it -->
 
   <!-- Copy local Tesseract-OCR runtime folder to output (Debug/Release) -->
   <ItemGroup>
@@ -38,5 +49,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <!-- License file check removed: using embedded/hashed license store instead. -->
 
 </Project>

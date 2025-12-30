@@ -34,9 +34,9 @@ public class AzureConfig
         {
             // Azure Services (sadece 2 gerekli)
             TranslatorKey = GetEnvironmentVariable("AZURE_TRANSLATOR_KEY"),
-            TranslatorRegion = GetEnvironmentVariable("AZURE_TRANSLATOR_REGION", "eastus"),
+            TranslatorRegion = GetEnvironmentVariable("AZURE_TRANSLATOR_REGION", "westeurope"),
             SpeechKey = GetEnvironmentVariable("AZURE_SPEECH_KEY"),
-            SpeechRegion = GetEnvironmentVariable("AZURE_SPEECH_REGION", "eastus"),
+            SpeechRegion = GetEnvironmentVariable("AZURE_SPEECH_REGION", "westeurope"),
             
             // Language Service artýk OPSIYONEL
             LanguageKey = GetEnvironmentVariable("AZURE_LANGUAGE_KEY", ""),
@@ -49,7 +49,26 @@ public class AzureConfig
             OcrLanguage = GetEnvironmentVariable("OCR_LANGUAGE", "ron+tur")
         };
 
-        // Validation
+        // If environment variables are not set, try to load keys from persisted license storage
+        try
+        {
+            if (string.IsNullOrEmpty(config.TranslatorKey) || string.IsNullOrEmpty(config.SpeechKey))
+            {
+                var persisted = TurkceRumenceCeviri.Utilities.LicenseStorage.Load();
+                if (persisted != null)
+                {
+                    if (string.IsNullOrEmpty(config.TranslatorKey) && !string.IsNullOrEmpty(persisted.TranslatorKey))
+                        config.TranslatorKey = persisted.TranslatorKey;
+                    if (string.IsNullOrEmpty(config.SpeechKey) && !string.IsNullOrEmpty(persisted.SpeechKey))
+                        config.SpeechKey = persisted.SpeechKey;
+                    if (string.IsNullOrEmpty(config.GroqKey) && !string.IsNullOrEmpty(persisted.GroqKey))
+                        config.GroqKey = persisted.GroqKey;
+                }
+            }
+        }
+        catch { /* ignore errors while trying to load persisted keys */ }
+
+        // Validation (do NOT throw here so UI can start even if env vars are missing; just warn)
         ValidateConfiguration(config);
         return config;
     }
@@ -96,7 +115,8 @@ public class AzureConfig
         {
             var message = $"Missing required environment variables: {string.Join(", ", missingKeys)}";
             Console.WriteLine($"? {message}");
-            throw new InvalidOperationException(message);
+            Console.WriteLine("? Application will continue so you can enter keys via the UI. Some features may fail until keys are provided.");
+            // Do not throw here to allow UI to start so user can provide keys through the settings panel
         }
     }
 
@@ -118,3 +138,4 @@ public class AzureConfig
 ";
     }
 }
+

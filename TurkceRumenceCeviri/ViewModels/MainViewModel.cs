@@ -7,6 +7,11 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using TurkceRumenceCeviri.Utilities;
+using System.Net.Http;
+using System.Text;
+using Newtonsoft.Json;
+using Microsoft.CognitiveServices.Speech;
+using Microsoft.CognitiveServices.Speech.Audio;
 
 namespace TurkceRumenceCeviri.ViewModels;
 
@@ -34,9 +39,9 @@ public class RelayCommand : System.Windows.Input.ICommand
 
 public class MainViewModel : INotifyPropertyChanged
 {
-    private readonly ITranslationService _translationService;
-    private readonly ISpeechRecognitionService _speechService;
-    private readonly ITextToSpeechService _ttsService;
+    private ITranslationService _translationService;
+    private ISpeechRecognitionService _speechService;
+    private ITextToSpeechService _ttsService;
     private readonly IOcrService _ocrService;
     private readonly IAIAssistantService _aiService;
     private readonly SpeechSessionManager _sessionManager;
@@ -175,6 +180,115 @@ public class MainViewModel : INotifyPropertyChanged
         AnswerQuestionsCommand = new RelayCommand(_ => { AssistantQuestion = "Sadece Soruları cevapla"; AskAssistant(); });
         WordListCommand = new RelayCommand(_ => { AssistantQuestion = "Kelime listesi"; AskAssistant(); });
         PronounceCommand = new RelayCommand(_ => { AssistantQuestion = "Telaffuz öner"; AskAssistant(); });
+        // Activation / license
+        ActivateCommand = new RelayCommand(async _ => await ActivateAsync(), _ => !IsLicensed);
+
+        // generate device code
+        try
+        {
+            DeviceCode = TurkceRumenceCeviri.Utilities.DeviceCodeGenerator.CreateDeviceCode(TurkceRumenceCeviri.Utilities.HardwareIdProvider.GetHardwareId());
+        }
+        catch { DeviceCode = string.Empty; }
+
+        // attempt to load persisted license
+        try
+        {
+            var persisted = TurkceRumenceCeviri.Utilities.LicenseStorage.Load();
+            if (persisted != null && !string.IsNullOrWhiteSpace(persisted.LicenseKey))
+            {
+                var act = new TurkceRumenceCeviri.Services.ActivationService();
+                if (!string.IsNullOrEmpty(DeviceCode) && act.ValidateActivationKey(DeviceCode, persisted.LicenseKey))
+                {
+                    IsLicensed = true;
+                    TranslatorKeyInput = persisted.TranslatorKey ?? string.Empty;
+                    SpeechKeyInput = persisted.SpeechKey ?? string.Empty;
+                    GroqKeyInput = persisted.GroqKey ?? string.Empty;
+                    LicenseKeyInput = persisted.LicenseKey ?? string.Empty;
+                    TranslatorRegionInput = persisted.TranslatorRegion ?? "eastus";
+                    SpeechRegionInput = persisted.SpeechRegion ?? "eastus";
+                    LicenseStatusMessage = "Lisans yüklendi";
+                }
+            }
+        }
+        catch { }
+
+        TestTranslatorKeyCommand = new RelayCommand(async _ => await TestTranslatorKeyAsync());
+        TestSpeechKeyCommand = new RelayCommand(async _ => await TestSpeechKeyAsync());
+    }
+
+    // Activation / license fields and properties
+    private string _deviceCode = "";
+    private string _translatorKeyInput = "";
+    private string _groqKeyInput = "";
+    private string _speechKeyInput = "";
+    private string _licenseKeyInput = "";
+    private string _licenseStatusMessage = "";
+    private bool _isLicensed = false;
+    private string _translatorRegionInput = "westeurope";
+    private string _speechRegionInput = "westeurope";
+
+    public string DeviceCode { get => _deviceCode; set => SetProperty(ref _deviceCode, value); }
+    public string TranslatorKeyInput { get => _translatorKeyInput; set => SetProperty(ref _translatorKeyInput, value); }
+    public string GroqKeyInput { get => _groqKeyInput; set => SetProperty(ref _groqKeyInput, value); }
+    public string SpeechKeyInput { get => _speechKeyInput; set => SetProperty(ref _speechKeyInput, value); }
+    public string LicenseKeyInput { get => _licenseKeyInput; set => SetProperty(ref _licenseKeyInput, value); }
+    public string LicenseStatusMessage { get => _licenseStatusMessage; set => SetProperty(ref _licenseStatusMessage, value); }
+    public bool IsLicensed { get => _isLicensed; set { if (SetProperty(ref _isLicensed, value)) System.Windows.Input.CommandManager.InvalidateRequerySuggested(); } }
+    public string TranslatorRegionInput { get => _translatorRegionInput; set => SetProperty(ref _translatorRegionInput, value); }
+    public string SpeechRegionInput { get => _speechRegionInput; set => SetProperty(ref _speechRegionInput, value); }
+
+    public RelayCommand ActivateCommand { get; }
+
+    public RelayCommand TestTranslatorKeyCommand { get; }
+    public RelayCommand TestSpeechKeyCommand { get; }
+
+
+    private async Task ActivateAsync()
+    {
+        try
+        {
+            LicenseStatusMessage = "Doğrulanıyor...";
+            await Task.Delay(10); // allow UI update
+            var svc = new TurkceRumenceCeviri.Services.ActivationService();
+            if (string.IsNullOrWhiteSpace(DeviceCode))
+            {
+                LicenseStatusMessage = "Cihaz kodu alınamadı.";
+                return;
+            }
+
+            if (svc.ValidateActivationKey(DeviceCode, LicenseKeyInput))
+            {
+                svc.PersistActivation(DeviceCode, LicenseKeyInput, TranslatorKeyInput, SpeechKeyInput, GroqKeyInput, TranslatorRegionInput, SpeechRegionInput);
+                IsLicensed = true;
+                LicenseStatusMessage = "Lisans aktifleştirildi.";
+                // Apply to current process environment so restart/other code can pick them up
+                try
+                {
+                    if (!string.IsNullOrEmpty(TranslatorKeyInput)) Environment.SetEnvironmentVariable("AZURE_TRANSLATOR_KEY", TranslatorKeyInput);
+                    if (!string.IsNullOrEmpty(SpeechKeyInput)) Environment.SetEnvironmentVariable("AZURE_SPEECH_KEY", SpeechKeyInput);
+                    if (!string.IsNullOrEmpty(GroqKeyInput)) Environment.SetEnvironmentVariable("GROQ_API_KEY", GroqKeyInput);
+                    if (!string.IsNullOrEmpty(TranslatorRegionInput)) Environment.SetEnvironmentVariable("AZURE_TRANSLATOR_REGION", TranslatorRegionInput);
+                    if (!string.IsNullOrEmpty(SpeechRegionInput)) Environment.SetEnvironmentVariable("AZURE_SPEECH_REGION", SpeechRegionInput);
+                }
+                catch { }
+                // Reinitialize runtime services so keys take effect without restart
+                try
+                {
+                    ReinitializeServices();
+                    LicenseStatusMessage = "Lisans aktifleştirildi ve servisler yeniden başlatıldı.";
+                }
+                catch { LicenseStatusMessage = "Lisans kaydedildi, servis yeniden başlatılamadı."; }
+            }
+            else
+            {
+                IsLicensed = false;
+                LicenseStatusMessage = "Geçersiz lisans anahtarı.";
+            }
+        }
+        catch (Exception ex)
+        {
+            LicenseStatusMessage = $"Aktivasyon hatası: {ex.Message}";
+        }
     }
 
     private async void StartListening()
@@ -374,7 +488,7 @@ public class MainViewModel : INotifyPropertyChanged
             // Decide one side for the whole selection to preserve meaning
             // Exclude 'ş/Ş' from Turkish to avoid overlap with Romanian 'ș/Ș'
             var trChars = new HashSet<char>(new[] { 'ğ','Ğ','ı','İ','ç','Ç','ö','Ö','ü','Ü' });
-            var roChars = new HashSet<char>(new[] { 'ă','Ă','â','Â','î','Î','ș','Ș','ț','Ț' });
+            var roChars = new HashSet<char>(new[] { 'ă','Ă','â','Â','î','Î','ş','Ș','ț','Ț' });
 
             // Normalize OCR-confusable characters for detection (not for display)
             string detectText = fullText
@@ -537,5 +651,96 @@ public class MainViewModel : INotifyPropertyChanged
             }, token);
         }
         catch { }
+    }
+
+    private async Task TestTranslatorKeyAsync()
+    {
+        try
+        {
+            var key = TranslatorKeyInput;
+            var region = TranslatorRegionInput;
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                LicenseStatusMessage = "Translator key boş";
+                return;
+            }
+
+            var endpoint = $"https://{region}.api.cognitive.microsofttranslator.com";
+            var uri = $"{endpoint}/translate?api-version=3.0&to=tr";
+            using var client = new HttpClient();
+            var req = new HttpRequestMessage(HttpMethod.Post, uri);
+            req.Headers.Add("Ocp-Apim-Subscription-Key", key);
+            req.Headers.Add("Ocp-Apim-Subscription-Region", region);
+            req.Content = new StringContent(JsonConvert.SerializeObject(new object[] { new { Text = "test" } }), Encoding.UTF8, "application/json");
+            var resp = await client.SendAsync(req).ConfigureAwait(false);
+            var text = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (resp.IsSuccessStatusCode)
+            {
+                LicenseStatusMessage = "Translator test başarılı";
+            }
+            else
+            {
+                LicenseStatusMessage = $"Translator test başarısız: {(int)resp.StatusCode} {resp.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            LicenseStatusMessage = $"Translator test hatası: {ex.Message}";
+        }
+    }
+
+    private async Task TestSpeechKeyAsync()
+    {
+        try
+        {
+            var key = SpeechKeyInput;
+            var region = SpeechRegionInput;
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                LicenseStatusMessage = "Speech key boş";
+                return;
+            }
+
+            try
+            {
+                var config = SpeechConfig.FromSubscription(key, region);
+                using var audio = AudioConfig.FromDefaultSpeakerOutput();
+                using var synth = new SpeechSynthesizer(config, audio);
+                var res = await synth.SpeakTextAsync("test").ConfigureAwait(false);
+                if (res.Reason == ResultReason.SynthesizingAudioCompleted)
+                {
+                    LicenseStatusMessage = "Speech (TTS) test başarılı";
+                }
+                else
+                {
+                    LicenseStatusMessage = $"Speech test başarısız: {res.Reason}";
+                }
+            }
+            catch (Exception ex)
+            {
+                LicenseStatusMessage = $"Speech test hatası: {ex.Message}";
+            }
+        }
+        catch (Exception ex)
+        {
+            LicenseStatusMessage = $"Speech test hatası: {ex.Message}";
+        }
+    }
+
+    private void ReinitializeServices()
+    {
+        try
+        {
+            // Recreate translation, speech and tts services using current keys
+            var cfg = TurkceRumenceCeviri.Configuration.AzureConfig.LoadFromEnvironment();
+
+            _translationService = new TurkceRumenceCeviri.Services.Implementations.AzureTranslationService(TranslatorKeyInput ?? cfg.TranslatorKey, TranslatorRegionInput ?? cfg.TranslatorRegion);
+            _speechService = new TurkceRumenceCeviri.Services.Implementations.AzureSpeechRecognitionService(SpeechKeyInput ?? cfg.SpeechKey, SpeechRegionInput ?? cfg.SpeechRegion);
+            _ttsService = new TurkceRumenceCeviri.Services.Implementations.AzureTextToSpeechService(SpeechKeyInput ?? cfg.SpeechKey, SpeechRegionInput ?? cfg.SpeechRegion);
+        }
+        catch (Exception ex)
+        {
+            TurkceRumenceCeviri.Utilities.DebugHelper.LogWarning($"Failed to reinitialize services: {ex.Message}");
+        }
     }
 }
