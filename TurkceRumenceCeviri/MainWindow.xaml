@@ -42,11 +42,7 @@
                                 <Button Content="Aktive Et" Command="{Binding ActivateCommand}" Margin="6,0,0,0"/>
                             </StackPanel>
                             <TextBlock Text="{Binding LicenseStatusMessage}" FontSize="12" Foreground="#666" Margin="0,8,0,0"/>
-                            <!-- Test buttons for keys -->
-                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                <Button Content="Test Translator" Command="{Binding TestTranslatorKeyCommand}" Width="100" Height="25" FontSize="10"/>
-                                <Button Content="Test Speech" Command="{Binding TestSpeechKeyCommand}" Width="100" Height="25" FontSize="10" Margin="6,0,0,0"/>
-                            </StackPanel>
+                           
                         </StackPanel>
                     </Expander>
                 </StackPanel>
@@ -186,12 +182,12 @@
                             <Border Grid.Column="0" Grid.Row="0" Background="#E3F2FD" CornerRadius="6" Padding="8" Margin="0,0,6,8" BorderBrush="#90CAF9" BorderThickness="1">
                                 <TextBlock Text="RO • Rumence (Asistan)" FontWeight="Bold" Foreground="#1565C0"/>
                             </Border>
-                            <TextBox Grid.Column="0" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" Padding="12" Background="#E3F2FD" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="14" Text="{Binding AssistantResponse, Mode=OneWay}" Margin="0,0,6,12" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                            <TextBox Grid.Column="0" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" Padding="12" Background="#E3F2FD" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="14" Text="{Binding AssistantResponse, Mode=OneWay}" Margin="0,0,6,0" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
 
                             <Border Grid.Column="1" Grid.Row="0" Background="#E8F5E9" CornerRadius="6" Padding="8" Margin="6,0,0,8" BorderBrush="#A5D6A7" BorderThickness="1">
                                 <TextBlock Text="TR • Türkçe (Asistan)" FontWeight="Bold" Foreground="#2E7D32"/>
                             </Border>
-                            <TextBox Grid.Column="1" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" Padding="12" Background="#E8F5E9" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="14" ScrollViewer.VerticalScrollBarVisibility="Auto" Text="{Binding TranslatedTurkishAssistant, Mode=OneWay}"/>
+                            <TextBox Grid.Column="1" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" Padding="12" Background="#E8F5E9" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="14" ScrollViewer.VerticalScrollBarVisibility="Auto" Text="{Binding TranslatedTurkishAssistant, Mode=OneWay}" Margin="6,0,0,0"/>
                         </Grid>
                     </StackPanel>
                 </Border>
