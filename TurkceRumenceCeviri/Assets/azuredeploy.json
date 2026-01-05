@@ -1,0 +1,77 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "westeurope",
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    },
+    "sku": {
+      "type": "string",
+      "defaultValue": "F0",
+      "allowedValues": [
+        "F0",
+        "S0"
+      ],
+      "metadata": {
+        "description": "The pricing tier for the services."
+      }
+    },
+    "baseName": {
+      "type": "string",
+      "defaultValue": "trc-app",
+      "metadata": {
+        "description": "Base name for resources."
+      }
+    }
+  },
+  "variables": {
+    "speechName": "[concat(parameters('baseName'), '-speech-', uniqueString(resourceGroup().id))]",
+    "translatorName": "[concat(parameters('baseName'), '-trans-', uniqueString(resourceGroup().id))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('speechName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('sku')]"
+      },
+      "kind": "SpeechServices",
+      "properties": {
+        "apiProperties": {
+          "statisticsEnabled": false
+        }
+      }
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('translatorName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('sku')]"
+      },
+      "kind": "TextTranslation",
+      "properties": {
+        "apiProperties": {
+          "statisticsEnabled": false
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "speechResourceName": {
+      "type": "string",
+      "value": "[variables('speechName')]"
+    },
+    "translatorResourceName": {
+      "type": "string",
+      "value": "[variables('translatorName')]"
+    }
+  }
+}

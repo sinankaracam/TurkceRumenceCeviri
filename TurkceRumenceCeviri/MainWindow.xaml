@@ -4,16 +4,26 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TurkceRumenceCeviri"
+        xmlns:utils="clr-namespace:TurkceRumenceCeviri.Utilities"
         mc:Ignorable="d"
-        Title="Türkçe - Rumence Çeviri" Background="#F8F9FA" WindowState="Maximized" MinWidth="1024" MinHeight="700">
-    <Grid>
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="16">
+        Title="Türkçe - Rumence Çeviri" Background="#F8F9FA" WindowState="Maximized" MinWidth="1024" MinHeight="700"
+        Icon="pack://application:,,,/Assets/lilygo.jpg">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="3*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="2*"/>
+        </Grid.RowDefinitions>
             <!-- Header -->
-            <Grid Margin="0,0,0,12">
-                <StackPanel VerticalAlignment="Top">
-                    <TextBlock Text="Türkçe - Rumence Çeviri" FontSize="32" FontWeight="Bold" Foreground="#1A1A1A"/>
-                    <TextBlock Text="© 2025 - LilyGoo" FontSize="12" Foreground="#666666" Margin="0,5,0,0"/>
+            <Grid Grid.Row="0" Margin="0,0,0,6">
+                <StackPanel VerticalAlignment="Top" Orientation="Horizontal">
+                    <Image Source="pack://application:,,,/Assets/lilygo.jpg" Width="50" Height="50" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text=" 'Lily Go' (Türkçe - Rumence Çeviri)" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A"/>
+                        <TextBlock Text="© 2025 ceviriapi@hotmail.com" FontSize="14" Foreground="#666666" Margin="0,5,0,0"/>
+                    </StackPanel>
                 </StackPanel>
                 <StackPanel VerticalAlignment="Top" HorizontalAlignment="Right" Orientation="Horizontal">
                     <StackPanel Orientation="Vertical" HorizontalAlignment="Right" Margin="0,0,12,0">
@@ -27,13 +37,22 @@
                             <TextBlock Text="Cihaz Kodu" FontSize="12" FontWeight="Bold"/>
                             <TextBox Text="{Binding DeviceCode}" IsReadOnly="True"/>
                             <TextBlock Text="Translator Key" FontSize="12" FontWeight="Bold"/>
-                            <TextBox Text="{Binding TranslatorKeyInput, UpdateSourceTrigger=PropertyChanged}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox Text="{Binding TranslatorKeyInput, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+                                <Button Content="Azure'dan Al" Command="{Binding DeployAzureResourcesCommand}" Margin="6,0,0,0" Background="#0078D4" Foreground="White" FontWeight="Bold" ToolTip="Azure üzerinden otomatik kurulum yap"/>
+                            </StackPanel>
                             <TextBlock Text="Translator Region" FontSize="12" FontWeight="Bold" Margin="0,6,0,0"/>
                             <TextBox Text="{Binding TranslatorRegionInput, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"/>
                             <TextBlock Text="Groq Key" FontSize="12" FontWeight="Bold" Margin="0,6,0,0"/>
-                            <TextBox Text="{Binding GroqKeyInput, UpdateSourceTrigger=PropertyChanged}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox Text="{Binding GroqKeyInput, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+                                <Button Content="Groq'dan Al" Command="{Binding GetGroqKeyCommand}" Margin="6,0,0,0" Background="#F55036" Foreground="White" FontWeight="Bold"/>
+                            </StackPanel>
                             <TextBlock Text="Speech Key" FontSize="12" FontWeight="Bold" Margin="0,6,0,0"/>
-                            <TextBox Text="{Binding SpeechKeyInput, UpdateSourceTrigger=PropertyChanged}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox Text="{Binding SpeechKeyInput, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+                                <Button Content="Azure'dan Al" Command="{Binding DeployAzureResourcesCommand}" Margin="6,0,0,0" Background="#0078D4" Foreground="White" FontWeight="Bold" ToolTip="Azure üzerinden otomatik kurulum yap"/>
+                            </StackPanel>
                             <TextBlock Text="Speech Region" FontSize="12" FontWeight="Bold" Margin="0,6,0,0"/>
                             <TextBox Text="{Binding SpeechRegionInput, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"/>
                             <TextBlock Text="Lisans Keyi" FontSize="12" FontWeight="Bold" Margin="0,6,0,0"/>
@@ -42,40 +61,42 @@
                                 <Button Content="Aktive Et" Command="{Binding ActivateCommand}" Margin="6,0,0,0"/>
                             </StackPanel>
                             <TextBlock Text="{Binding LicenseStatusMessage}" FontSize="12" Foreground="#666" Margin="0,8,0,0"/>
-                           
+                            <CheckBox Content="Pencere Düzenini Kilitle" IsChecked="{Binding IsLayoutLocked}" Margin="0,8,0,0"/>
                         </StackPanel>
                     </Expander>
                 </StackPanel>
             </Grid>
 
             <!-- Action Buttons -->
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                <Button x:Name="StartButton" Content="🎤 Başlat" Command="{Binding StartListeningCommand}" Width="150" Height="45" Background="White" BorderBrush="#CCCCCC" BorderThickness="2" FontSize="14" FontWeight="Bold" Margin="0,0,15,0" IsEnabled="{Binding IsLicensed}"/>
-                <Button x:Name="StopButton" Content="☐ Durdur" Command="{Binding StopListeningCommand}" Width="150" Height="45" Background="White" BorderBrush="#CCCCCC" BorderThickness="2" FontSize="14" FontWeight="Bold" Margin="0,0,15,0" IsEnabled="{Binding IsLicensed}"/>
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,6">
+                <Button x:Name="StartButton" Content="🎤 Başlat" Command="{Binding StartListeningCommand}" Width="130" Height="36" Background="White" BorderBrush="#CCCCCC" BorderThickness="2" FontSize="13" FontWeight="Bold" Margin="0,0,8,0" IsEnabled="{Binding IsLicensed}"/>
+                <Button x:Name="StopButton" Content="☐ Durdur" Command="{Binding StopListeningCommand}" Width="130" Height="36" Background="White" BorderBrush="#CCCCCC" BorderThickness="2" FontSize="13" FontWeight="Bold" Margin="0,0,8,0" IsEnabled="{Binding IsLicensed}"/>
                 <!-- Global speak removed; per-translation speak buttons are below -->
-                <Button x:Name="OcrButton" Content="💻 Ekrandan Çevir" Command="{Binding ExtractFromScreenCommand}" Width="150" Height="45" Background="White" BorderBrush="#CCCCCC" BorderThickness="2" FontSize="14" FontWeight="Bold" IsEnabled="{Binding IsLicensed}"/>
+                <Button x:Name="OcrButton" Content="💻 Ekrandan Çevir" Command="{Binding ExtractFromScreenCommand}" Width="150" Height="36" Background="White" BorderBrush="#CCCCCC" BorderThickness="2" FontSize="13" FontWeight="Bold" IsEnabled="{Binding IsLicensed}"/>
             </StackPanel>
 
             <!-- Main Content Grid -->
-            <Grid Margin="0,0,0,12">
+            <Grid Grid.Row="2" Margin="0,0,0,6">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="1*"/>
                 </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
 
                 <!-- Left Side: Konuşulan Metin -->
-                <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" BorderBrush="#CCCCCC" BorderThickness="2" CornerRadius="10" Background="White" Margin="0,0,10,0" Padding="20">
-                    <StackPanel>
-                        <TextBlock Text="Konuşulan Metin" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,0,0,15"/>
+                <Border Grid.Column="0" BorderBrush="#CCCCCC" BorderThickness="2" CornerRadius="10" Background="White" Margin="0,0,0,0" Padding="14">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Konuşulan Metin" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,0,0,15"/>
 
                         <!-- Input Fields in two columns with clear headers -->
-                        <Grid>
+                        <Grid Grid.Row="1">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
@@ -84,27 +105,38 @@
                             </Grid.RowDefinitions>
 
                             <!-- Headers -->
-                            <Border Grid.Column="0" Grid.Row="0" Background="#E3F2FD" CornerRadius="6" Padding="8" Margin="0,0,6,8" BorderBrush="#90CAF9" BorderThickness="1">
+                            <Border Grid.Column="0" Grid.Row="0" Background="#E3F2FD" CornerRadius="6" Padding="8" Margin="0,0,0,8" BorderBrush="#90CAF9" BorderThickness="1">
                                 <TextBlock Text="RO • Rumence (Giriş)" FontWeight="Bold" Foreground="#1565C0"/>
                             </Border>
-                            <Border Grid.Column="1" Grid.Row="0" Background="#E8F5E9" CornerRadius="6" Padding="8" Margin="6,0,0,8" BorderBrush="#A5D6A7" BorderThickness="1">
+                            <Border Grid.Column="2" Grid.Row="0" Background="#E8F5E9" CornerRadius="6" Padding="8" Margin="0,0,0,8" BorderBrush="#A5D6A7" BorderThickness="1">
                                 <TextBlock Text="TR • Türkçe (Giriş)" FontWeight="Bold" Foreground="#2E7D32"/>
                             </Border>
 
                             <!-- Textboxes -->
-                            <TextBox x:Name="RomanianInputBox" Grid.Column="0" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" AcceptsReturn="True" Padding="12" Background="#F5F5F5" BorderBrush="#DCDCDC" BorderThickness="1" Foreground="#666666" FontSize="14" Text="{Binding RomanianText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,6,0" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
-                            <TextBox x:Name="TurkishInputBox" Grid.Column="1" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" AcceptsReturn="True" Padding="12" Background="#F5F5F5" BorderBrush="#DCDCDC" BorderThickness="1" Foreground="#666666" FontSize="14" Text="{Binding TurkishText, UpdateSourceTrigger=PropertyChanged}" Margin="6,0,0,0" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                            <TextBox x:Name="RomanianInputBox" Grid.Column="0" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" AcceptsReturn="True" Padding="12" Background="#F5F5F5" BorderBrush="#DCDCDC" BorderThickness="1" Foreground="#666666" FontSize="14" Text="{Binding RomanianText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,0" ScrollViewer.VerticalScrollBarVisibility="Auto" utils:TextBoxAutoScrollBehavior.AutoScrollToEnd="True"/>
+                            
+                            <GridSplitter Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" IsEnabled="{Binding IsLayoutUnlocked}"/>
+
+                            <TextBox x:Name="TurkishInputBox" Grid.Column="2" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" AcceptsReturn="True" Padding="12" Background="#F5F5F5" BorderBrush="#DCDCDC" BorderThickness="1" Foreground="#666666" FontSize="14" Text="{Binding TurkishText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,0" ScrollViewer.VerticalScrollBarVisibility="Auto" utils:TextBoxAutoScrollBehavior.AutoScrollToEnd="True"/>
                         </Grid>
-                    </StackPanel>
+                    </Grid>
                 </Border>
 
+                <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" IsEnabled="{Binding IsLayoutUnlocked}"/>
+
                 <!-- Right Side: Yapay Zekaya Sor -->
-                <Border Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" BorderBrush="#FF4444" BorderThickness="3" CornerRadius="10" Background="White" Margin="10,0,0,0" Padding="20">
-                    <StackPanel>
-                        <TextBlock Text="Yapay Zekaya Sor" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,0,0,15"/>
+                <Border Grid.Column="2" BorderBrush="#FF4444" BorderThickness="3" CornerRadius="10" Background="White" Margin="0,0,0,0" Padding="14">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Yapay Zekaya Sor" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,0,0,15"/>
 
                         <!-- Query Tabs -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15" TextBlock.FontSize="12">
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15" TextBlock.FontSize="12">
                             <Button Content="Metni özetle" Command="{Binding SummarizeCommand}" Width="Auto" Padding="12,6" Background="#F0F0F0" BorderBrush="#CCCCCC" BorderThickness="1" Margin="0,0,15,0"/>
                             <Button Content="Soruları çıkar" Command="{Binding ExtractQuestionsCommand}" Width="Auto" Padding="12,6" Background="#F0F0F0" BorderBrush="#CCCCCC" BorderThickness="1" Margin="0,0,15,0"/>
                             <Button Content="Soruları Cevapla" Command="{Binding AnswerQuestionsCommand}" Width="Auto" Padding="12,6" Background="#F0F0F0" BorderBrush="#CCCCCC" BorderThickness="1" Margin="0,0,15,0"/>
@@ -113,86 +145,100 @@
                         </StackPanel>
 
                         <!-- Query Input -->
-                        <TextBox x:Name="QueryBox" Height="120" TextWrapping="Wrap" AcceptsReturn="True" Padding="12" Background="#F5F5F5" BorderBrush="#DCDCDC" BorderThickness="1" Foreground="#999999" FontSize="13" Text="{Binding AssistantQuestion, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,15" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                        <TextBox x:Name="QueryBox" Grid.Row="2" VerticalAlignment="Stretch" TextWrapping="Wrap" AcceptsReturn="True" Padding="10" Background="#F5F5F5" BorderBrush="#DCDCDC" BorderThickness="1" Foreground="#999999" FontSize="13" Text="{Binding AssistantQuestion, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
 
                         <!-- Query Button -->
-                        <Button Content="Sor" Command="{Binding AskAssistantCommand}" Height="50" Background="#FF4444" Foreground="White" FontSize="16" FontWeight="Bold" Cursor="Hand"/>
-                    </StackPanel>
+                        <Button Grid.Row="3" Content="Sor" Command="{Binding AskAssistantCommand}" Height="40" Background="#FF4444" Foreground="White" FontSize="15" FontWeight="Bold" Cursor="Hand"/>
+                    </Grid>
                 </Border>
             </Grid>
 
+            <GridSplitter Grid.Row="3" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="Transparent" IsEnabled="{Binding IsLayoutUnlocked}"/>
+
             <!-- Bottom Section: Çeviri ve Asistan Cevabı -->
-            <Grid>
+            <Grid Grid.Row="4">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="1*"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Translation Results -->
-                <Border Grid.Column="0" BorderBrush="#CCCCCC" BorderThickness="2" CornerRadius="10" Background="White" Margin="0,0,10,0" Padding="20">
-                    <StackPanel>
-                        <TextBlock Text="Çeviri" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,0,0,15"/>
+                <Border Grid.Column="0" BorderBrush="#CCCCCC" BorderThickness="2" CornerRadius="10" Background="White" Margin="0,0,0,0" Padding="14">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Çeviri" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,0,0,15"/>
 
-                        <Grid>
+                        <Grid Grid.Row="1">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                                 <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
 
                             <!-- Headers -->
-                            <Border Grid.Column="0" Grid.Row="0" Background="#E8F5E9" CornerRadius="6" Padding="8" Margin="0,0,6,8" BorderBrush="#A5D6A7" BorderThickness="1">
+                            <Border Grid.Column="0" Grid.Row="0" Background="#E8F5E9" CornerRadius="6" Padding="8" Margin="0,0,0,8" BorderBrush="#A5D6A7" BorderThickness="1">
                                 <TextBlock Text="TR • Türkçe (Çeviri)" FontWeight="Bold" Foreground="#2E7D32"/>
                             </Border>
-                            <TextBox Grid.Column="0" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" Padding="12" Background="#E8F5E9" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="14" Text="{Binding TranslatedTurkish, Mode=OneWay}" Margin="0,0,6,12" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
-                            <Button Grid.Column="0" Grid.Row="2" Content="🔊 Türkçe Çeviriyi Seslendir" Command="{Binding SpeakTurkishTranslationCommand}" Height="35" Background="#E8F5E9" BorderBrush="#A5D6A7" BorderThickness="1" Margin="0,0,6,12"/>
+                            <TextBox Grid.Column="0" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" AcceptsReturn="True" Padding="12" Background="#E8F5E9" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="14" Text="{Binding TranslatedTurkish, Mode=OneWay}" Margin="0,0,0,12" ScrollViewer.VerticalScrollBarVisibility="Auto" utils:TextBoxAutoScrollBehavior.AutoScrollToEnd="True"/>
+                            <Button Grid.Column="0" Grid.Row="2" Content="🔊 Türkçe Çeviriyi Seslendir" Command="{Binding SpeakTurkishTranslationCommand}" Height="35" Background="#E8F5E9" BorderBrush="#A5D6A7" BorderThickness="1" Margin="0,0,0,12"/>
 
-                            <Border Grid.Column="1" Grid.Row="0" Background="#E3F2FD" CornerRadius="6" Padding="8" Margin="6,0,0,8" BorderBrush="#90CAF9" BorderThickness="1">
+                            <GridSplitter Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" IsEnabled="{Binding IsLayoutUnlocked}"/>
+
+                            <Border Grid.Column="2" Grid.Row="0" Background="#E3F2FD" CornerRadius="6" Padding="8" Margin="0,0,0,8" BorderBrush="#90CAF9" BorderThickness="1">
                                 <TextBlock Text="RO • Rumence (Çeviri)" FontWeight="Bold" Foreground="#1565C0"/>
                             </Border>
-                            <TextBox Grid.Column="1" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" Padding="12" Background="#E3F2FD" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="14" Text="{Binding TranslatedRomanian, Mode=OneWay}" Margin="6,0,0,12" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
-                            <Button Grid.Column="1" Grid.Row="2" Content="🔊 Rumence Çeviriyi Seslendir" Command="{Binding SpeakRomanianTranslationCommand}" Height="35" Background="#E3F2FD" BorderBrush="#90CAF9" BorderThickness="1" Margin="6,0,0,12"/>
+                            <TextBox Grid.Column="2" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" AcceptsReturn="True" Padding="12" Background="#E3F2FD" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="14" Text="{Binding TranslatedRomanian, Mode=OneWay}" Margin="0,0,0,12" ScrollViewer.VerticalScrollBarVisibility="Auto" utils:TextBoxAutoScrollBehavior.AutoScrollToEnd="True"/>
+                            <Button Grid.Column="2" Grid.Row="2" Content="🔊 Rumence Çeviriyi Seslendir" Command="{Binding SpeakRomanianTranslationCommand}" Height="35" Background="#E3F2FD" BorderBrush="#90CAF9" BorderThickness="1" Margin="0,0,0,12"/>
                         </Grid>
-                    </StackPanel>
+                    </Grid>
                 </Border>
 
-                <!-- Assistant Response -->
-                <Border Grid.Column="1" BorderBrush="#CCCCCC" BorderThickness="2" CornerRadius="10" Background="White" Margin="10,0,0,0" Padding="20">
-                    <StackPanel>
-                        <TextBlock Text="Asistan Cevabı" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,0,0,15"/>
+                <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" IsEnabled="{Binding IsLayoutUnlocked}"/>
 
-                        <Grid>
+                <!-- Assistant Response -->
+                <Border Grid.Column="2" BorderBrush="#CCCCCC" BorderThickness="2" CornerRadius="10" Background="White" Margin="0,0,0,0" Padding="14">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Asistan Cevabı" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,0,0,15"/>
+
+                        <Grid Grid.Row="1">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
 
                             <!-- Headers -->
-                            <Border Grid.Column="0" Grid.Row="0" Background="#E3F2FD" CornerRadius="6" Padding="8" Margin="0,0,6,8" BorderBrush="#90CAF9" BorderThickness="1">
+                            <Border Grid.Column="0" Grid.Row="0" Background="#E3F2FD" CornerRadius="6" Padding="8" Margin="0,0,0,8" BorderBrush="#90CAF9" BorderThickness="1">
                                 <TextBlock Text="RO • Rumence (Asistan)" FontWeight="Bold" Foreground="#1565C0"/>
                             </Border>
-                            <TextBox Grid.Column="0" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" Padding="12" Background="#E3F2FD" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="14" Text="{Binding AssistantResponse, Mode=OneWay}" Margin="0,0,6,0" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                            <TextBox Grid.Column="0" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" AcceptsReturn="True" Padding="12" Background="#E3F2FD" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="14" Text="{Binding AssistantResponse, Mode=OneWay}" Margin="0,0,0,0" ScrollViewer.VerticalScrollBarVisibility="Auto" utils:TextBoxAutoScrollBehavior.AutoScrollToEnd="True"/>
 
-                            <Border Grid.Column="1" Grid.Row="0" Background="#E8F5E9" CornerRadius="6" Padding="8" Margin="6,0,0,8" BorderBrush="#A5D6A7" BorderThickness="1">
+                            <GridSplitter Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" IsEnabled="{Binding IsLayoutUnlocked}"/>
+
+                            <Border Grid.Column="2" Grid.Row="0" Background="#E8F5E9" CornerRadius="6" Padding="8" Margin="0,0,0,8" BorderBrush="#A5D6A7" BorderThickness="1">
                                 <TextBlock Text="TR • Türkçe (Asistan)" FontWeight="Bold" Foreground="#2E7D32"/>
                             </Border>
-                            <TextBox Grid.Column="1" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" Padding="12" Background="#E8F5E9" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="14" ScrollViewer.VerticalScrollBarVisibility="Auto" Text="{Binding TranslatedTurkishAssistant, Mode=OneWay}" Margin="6,0,0,0"/>
+                            <TextBox Grid.Column="2" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" AcceptsReturn="True" Padding="12" Background="#E8F5E9" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="14" ScrollViewer.VerticalScrollBarVisibility="Auto" Text="{Binding TranslatedTurkishAssistant, Mode=OneWay}" Margin="0,0,0,0" utils:TextBoxAutoScrollBehavior.AutoScrollToEnd="True"/>
                         </Grid>
-                    </StackPanel>
+                    </Grid>
                 </Border>
             </Grid>
-        </StackPanel>
-        </ScrollViewer>
     </Grid>
 </Window>

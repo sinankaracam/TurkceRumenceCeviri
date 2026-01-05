@@ -61,6 +61,9 @@ public class MainViewModel : INotifyPropertyChanged
     private CancellationTokenSource? _listeningCts;
     private CancellationTokenSource? _manualTranslateCts;
 
+    private readonly System.Text.StringBuilder _sttBuffer = new();
+    private DateTime _lastSttCommit = DateTime.MinValue;
+
     public string RomanianText
     {
         get => _romanianText;
@@ -152,6 +155,8 @@ public class MainViewModel : INotifyPropertyChanged
     public RelayCommand AnswerQuestionsCommand { get; }
     public RelayCommand WordListCommand { get; }
     public RelayCommand PronounceCommand { get; }
+    public RelayCommand DeployAzureResourcesCommand { get; }
+    public RelayCommand GetGroqKeyCommand { get; }
 
     public MainViewModel(
         ITranslationService translationService,
@@ -214,6 +219,62 @@ public class MainViewModel : INotifyPropertyChanged
 
         TestTranslatorKeyCommand = new RelayCommand(async _ => await TestTranslatorKeyAsync());
         TestSpeechKeyCommand = new RelayCommand(async _ => await TestSpeechKeyAsync());
+        
+        DeployAzureResourcesCommand = new RelayCommand(_ => 
+        {
+            try
+            {
+                // This URL points to the Azure Portal's custom deployment page, pre-filled with our template.
+                // Since we can't host the JSON publicly easily from a local app without a server, 
+                // we will point to a GitHub raw URL if the user pushes this code, or a generic quickstart.
+                // For now, let's assume the user will host this JSON or we use a generic "Create Resource" link.
+                // A better approach for a local app is to guide them to the portal creation pages directly.
+                
+                // Option 1: Direct link to create Speech Service
+                // System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                // {
+                //     FileName = "https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices",
+                //     UseShellExecute = true
+                // });
+
+                // Option 2: Azure Custom Deployment (requires public URL for the JSON)
+                // We will use a placeholder URL that the user should replace with their raw GitHub URL after pushing.
+                // For this example, I'll construct a URL that assumes the file is on the main branch of the repo.
+                // NOTE: This requires the repo to be public or the user to have access.
+                
+                // Let's use a more robust approach: Open a help page or the portal directly.
+                // But the user specifically asked for an ARM template button.
+                // We'll encode the template in a "Deploy to Azure" button link if possible, but that's complex.
+                // Instead, let's open the Azure Portal "Template Deployment" and let them paste it, 
+                // OR better, just link to the creation pages which is safer for end users.
+                
+                // However, to strictly follow "ARM/Bicep... button", we usually use the "Deploy to Azure" button pattern
+                // which requires a public URL. 
+                // Let's simulate this by opening the Azure Portal Custom Deployment blade.
+                
+                string templateLink = "https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsinankaracam%2FTurkceRumenceCeviri%2Fmaster%2FTurkceRumenceCeviri%2FAssets%2Fazuredeploy.json";
+                
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = templateLink,
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+        });
+
+        GetGroqKeyCommand = new RelayCommand(_ => 
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "https://console.groq.com/keys",
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+        });
     }
 
     // Activation / license fields and properties
@@ -226,6 +287,7 @@ public class MainViewModel : INotifyPropertyChanged
     private bool _isLicensed = false;
     private string _translatorRegionInput = "westeurope";
     private string _speechRegionInput = "westeurope";
+    private bool _isLayoutLocked = false;
 
     public string DeviceCode { get => _deviceCode; set => SetProperty(ref _deviceCode, value); }
     public string TranslatorKeyInput { get => _translatorKeyInput; set => SetProperty(ref _translatorKeyInput, value); }
@@ -236,6 +298,20 @@ public class MainViewModel : INotifyPropertyChanged
     public bool IsLicensed { get => _isLicensed; set { if (SetProperty(ref _isLicensed, value)) System.Windows.Input.CommandManager.InvalidateRequerySuggested(); } }
     public string TranslatorRegionInput { get => _translatorRegionInput; set => SetProperty(ref _translatorRegionInput, value); }
     public string SpeechRegionInput { get => _speechRegionInput; set => SetProperty(ref _speechRegionInput, value); }
+    
+    public bool IsLayoutLocked 
+    { 
+        get => _isLayoutLocked; 
+        set 
+        {
+            if (SetProperty(ref _isLayoutLocked, value))
+            {
+                OnPropertyChanged(nameof(IsLayoutUnlocked));
+            }
+        }
+    }
+    
+    public bool IsLayoutUnlocked => !IsLayoutLocked;
 
     public RelayCommand ActivateCommand { get; }
 
@@ -305,23 +381,48 @@ public class MainViewModel : INotifyPropertyChanged
                 var recognizedText = await _speechService.RecognizeAsync(_listeningCts.Token);
                 DebugHelper.LogMessage($"STT result: '{recognizedText}'", "STT");
 
-                if (!string.IsNullOrEmpty(recognizedText) && !recognizedText.StartsWith("[") && recognizedText != "İleri" && recognizedText != "Geri")
+                if (!string.IsNullOrWhiteSpace(recognizedText) && !recognizedText.StartsWith("[") && recognizedText != "İleri" && recognizedText != "Geri")
                 {
-                    var detectedLang = _speechService.LastDetectedLanguage ?? await _translationService.DetectLanguageAsync(recognizedText);
-                    DebugHelper.LogMessage($"Detected language: {detectedLang}", "STT");
+                    // Buffer by pause/punctuation to reduce word-by-word fragmentation
+                    if (_sttBuffer.Length > 0)
+                        _sttBuffer.Append(' ');
+                    _sttBuffer.Append(recognizedText.Trim());
 
-                    _sessionManager.UpdateLanguage(detectedLang);
-                    DetectedLanguage = detectedLang.ToUpper();
+                    var now = DateTime.UtcNow;
+                    var bufferText = _sttBuffer.ToString();
+                    bool hasEndPunct = bufferText.EndsWith(".") || bufferText.EndsWith("!") || bufferText.EndsWith("?");
+                    bool timedCommit = _lastSttCommit == DateTime.MinValue || (now - _lastSttCommit) >= TimeSpan.FromSeconds(2);
 
-                    if (detectedLang == "tr")
+                    if (hasEndPunct || timedCommit)
                     {
-                        TurkishText += (string.IsNullOrEmpty(TurkishText) ? "" : " ") + recognizedText;
-                        await PerformTranslation("tr");
-                    }
-                    else if (detectedLang == "ro")
-                    {
-                        RomanianText += (string.IsNullOrEmpty(RomanianText) ? "" : " ") + recognizedText;
-                        await PerformTranslation("ro");
+                        var segment = bufferText.Trim();
+                        _sttBuffer.Clear();
+                        _lastSttCommit = now;
+
+                        // Fast language inference: prefer STT auto-detect, then heuristic normalizer
+                        var detectedLang = _speechService.LastDetectedLanguage;
+                        detectedLang = (detectedLang ?? "").Trim().ToLowerInvariant();
+                        if (detectedLang.StartsWith("tr")) detectedLang = "tr";
+                        else if (detectedLang.StartsWith("ro")) detectedLang = "ro";
+                        else
+                        {
+                            detectedLang = TurkceRumenceCeviri.Services.Implementations.RomanianNormalizer.DetectLanguageForText(segment);
+                        }
+
+                        DebugHelper.LogMessage($"Detected language: {detectedLang}", "STT");
+                        _sessionManager.UpdateLanguage(detectedLang);
+                        DetectedLanguage = detectedLang.ToUpperInvariant();
+
+                        if (detectedLang == "ro")
+                        {
+                            RomanianText += (string.IsNullOrEmpty(RomanianText) ? "" : " ") + segment;
+                            await PerformTranslation("ro");
+                        }
+                        else
+                        {
+                            TurkishText += (string.IsNullOrEmpty(TurkishText) ? "" : " ") + segment;
+                            await PerformTranslation("tr");
+                        }
                     }
                 }
             }
@@ -626,6 +727,11 @@ public class MainViewModel : INotifyPropertyChanged
             return true;
         }
         return false;
+    }
+
+    protected void OnPropertyChanged(string propertyName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
     private void DebounceManualTranslate(string sourceLanguage)

@@ -1,4 +1,4 @@
-﻿  <Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -46,6 +46,16 @@
   <!-- Copy local Tesseract-OCR runtime folder to output (Debug/Release) -->
   <ItemGroup>
     <None Include="Tesseract-OCR\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\lilygo.jpg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Assets\azuredeploy.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
