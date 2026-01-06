@@ -227,38 +227,19 @@ public class MainViewModel : INotifyPropertyChanged
         {
             try
             {
-                // This URL points to the Azure Portal's custom deployment page, pre-filled with our template.
-                // Since we can't host the JSON publicly easily from a local app without a server, 
-                // we will point to a GitHub raw URL if the user pushes this code, or a generic quickstart.
-                // For now, let's assume the user will host this JSON or we use a generic "Create Resource" link.
+                // BURADA DEĞİŞİKLİK YAPIYORUZ:
+                // Ham (Raw) JSON linki:
+                string rawTemplateUrl = "https://raw.githubusercontent.com/sinankaracam/TurkceRumenceCeviri/master/TurkceRumenceCeviri/Assets/azuredeploy.json";
                 
-                // Option 1: Direct link to create Speech Service
-                // System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                // {
-                //     FileName = "https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices",
-                //     UseShellExecute = true
-                // });
-
-                // Option 2: Azure Custom Deployment (requires public URL for the JSON)
-                // We will use a placeholder URL that the user should replace with their raw GitHub URL after pushing.
-                // For this example, I'll construct a URL that assumes the file is on the main branch of the repo.
-                // NOTE: This requires the repo to be public or the user to have access.
+                // URL'i "URL Encode" işlemi ile güvenli hale getiriyoruz (C# kütüphanesi ile)
+                string encodedUrl = Uri.EscapeDataString(rawTemplateUrl);
                 
-                // Let's use a more robust approach: Open a help page or the portal directly.
-                // But the user specifically asked for an ARM template button.
-                // We'll encode the template in a "Deploy to Azure" button link if possible, but that's complex.
-                // Instead, let's open the Azure Portal "Template Deployment" and let them paste it, 
-                // OR better, just link to the creation pages which is safer for end users.
-                
-                // However, to strictly follow "ARM/Bicep... button", we usually use the "Deploy to Azure" button pattern
-                // which requires a public URL. 
-                // Let's simulate this by opening the Azure Portal Custom Deployment blade.
-                
-                string templateLink = "https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsinankaracam%2FTurkceRumenceCeviri%2Fmain%2FTurkceRumenceCeviri%2FAssets%2Fazuredeploy.json";
+                // Azure Portal Şablon Dağıtım Linkini oluşturuyoruz:
+                string deployToAzureLink = $"https://portal.azure.com/#create/Microsoft.Template/uri/{encodedUrl}";
                 
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = templateLink,
+                    FileName = deployToAzureLink,
                     UseShellExecute = true
                 });
             }
