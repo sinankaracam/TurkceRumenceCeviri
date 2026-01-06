@@ -254,7 +254,7 @@ public class MainViewModel : INotifyPropertyChanged
                 // which requires a public URL. 
                 // Let's simulate this by opening the Azure Portal Custom Deployment blade.
                 
-                string templateLink = "https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsinankaracam%2FTurkceRumenceCeviri%2Fmaster%2FTurkceRumenceCeviri%2FAssets%2Fazuredeploy.json";
+                string templateLink = "https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsinankaracam%2FTurkceRumenceCeviri%2Fmain%2FTurkceRumenceCeviri%2FAssets%2Fazuredeploy.json";
                 
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
