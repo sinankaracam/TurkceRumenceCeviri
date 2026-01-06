@@ -32,39 +32,39 @@
                     </StackPanel>
 
                     <!-- Settings quick panel -->
-                    <Expander Header="Ayarlar" IsExpanded="False" Width="320" HorizontalAlignment="Right">
-                        <StackPanel Margin="8">
-                            <TextBlock Text="Cihaz Kodu" FontSize="12" FontWeight="Bold"/>
-                            <TextBox Text="{Binding DeviceCode}" IsReadOnly="True"/>
-                            <TextBlock Text="Translator Key" FontSize="12" FontWeight="Bold"/>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBox Text="{Binding TranslatorKeyInput, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
-                                <Button Content="Azure'dan Al" Command="{Binding DeployAzureResourcesCommand}" Margin="6,0,0,0" Background="#0078D4" Foreground="White" FontWeight="Bold" ToolTip="Azure üzerinden otomatik kurulum yap"/>
-                            </StackPanel>
-                            <TextBlock Text="Translator Region" FontSize="12" FontWeight="Bold" Margin="0,6,0,0"/>
-                            <TextBox Text="{Binding TranslatorRegionInput, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"/>
-                            <TextBlock Text="Groq Key" FontSize="12" FontWeight="Bold" Margin="0,6,0,0"/>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBox Text="{Binding GroqKeyInput, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
-                                <Button Content="Groq'dan Al" Command="{Binding GetGroqKeyCommand}" Margin="6,0,0,0" Background="#F55036" Foreground="White" FontWeight="Bold"/>
-                            </StackPanel>
-                            <TextBlock Text="Speech Key" FontSize="12" FontWeight="Bold" Margin="0,6,0,0"/>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBox Text="{Binding SpeechKeyInput, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
-                                <Button Content="Azure'dan Al" Command="{Binding DeployAzureResourcesCommand}" Margin="6,0,0,0" Background="#0078D4" Foreground="White" FontWeight="Bold" ToolTip="Azure üzerinden otomatik kurulum yap"/>
-                            </StackPanel>
-                            <TextBlock Text="Speech Region" FontSize="12" FontWeight="Bold" Margin="0,6,0,0"/>
-                            <TextBox Text="{Binding SpeechRegionInput, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"/>
-                            <TextBlock Text="Lisans Keyi" FontSize="12" FontWeight="Bold" Margin="0,6,0,0"/>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBox Text="{Binding LicenseKeyInput, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
-                                <Button Content="Aktive Et" Command="{Binding ActivateCommand}" Margin="6,0,0,0"/>
-                            </StackPanel>
-                            <TextBlock Text="{Binding LicenseStatusMessage}" FontSize="12" Foreground="#666" Margin="0,8,0,0"/>
-                            <CheckBox Content="Pencere Düzenini Kilitle" IsChecked="{Binding IsLayoutLocked}" Margin="0,8,0,0"/>
+                <Expander Header="Ayarlar" IsExpanded="False" Width="320" HorizontalAlignment="Right">
+                    <StackPanel Margin="8">
+                        <TextBlock Text="Cihaz Kodu" FontSize="12" FontWeight="Bold"/>
+                        <TextBox Text="{Binding DeviceCode}" IsReadOnly="True"/>
+                        <TextBlock Text="Translator Key" FontSize="12" FontWeight="Bold"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox Text="{Binding TranslatorKeyInput, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+                            <Button Content="Azure'dan Al" Command="{Binding DeployAzureResourcesCommand}" Margin="6,0,0,0" Background="#0078D4" Foreground="White" FontWeight="Bold" ToolTip="Azure üzerinden otomatik kurulum yap"/>
                         </StackPanel>
-                    </Expander>
-                </StackPanel>
+                        <TextBlock Text="Translator Region" FontSize="12" FontWeight="Bold" Margin="0,6,0,0"/>
+                        <TextBox Text="{Binding TranslatorRegionInput, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"/>
+                        <TextBlock Text="Groq Key" FontSize="12" FontWeight="Bold" Margin="0,6,0,0"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox Text="{Binding GroqKeyInput, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+                            <Button Content="Groq'dan Al" Command="{Binding GetGroqKeyCommand}" Margin="6,0,0,0" Background="#F55036" Foreground="White" FontWeight="Bold"/>
+                        </StackPanel>
+                        <TextBlock Text="Speech Key" FontSize="12" FontWeight="Bold" Margin="0,6,0,0"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox Text="{Binding SpeechKeyInput, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+                            <Button Content="Azure'dan Al" Command="{Binding DeployAzureResourcesCommand}" Margin="6,0,0,0" Background="#0078D4" Foreground="White" FontWeight="Bold" ToolTip="Azure üzerinden otomatik kurulum yap"/>
+                        </StackPanel>
+                        <TextBlock Text="Speech Region" FontSize="12" FontWeight="Bold" Margin="0,6,0,0"/>
+                        <TextBox Text="{Binding SpeechRegionInput, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"/>
+                        <TextBlock Text="Lisans Keyi" FontSize="12" FontWeight="Bold" Margin="0,6,0,0"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox Text="{Binding LicenseKeyInput, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+                            <Button Content="Aktive Et" Command="{Binding ActivateCommand}" Margin="6,0,0,0"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding LicenseStatusMessage}" FontSize="12" Foreground="#666" Margin="0,8,0,0"/>
+                        <CheckBox Content="Pencere Düzenini Kilitle" IsChecked="{Binding IsLayoutLocked}" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
             </Grid>
 
             <!-- Action Buttons -->
@@ -106,7 +106,10 @@
 
                             <!-- Headers -->
                             <Border Grid.Column="0" Grid.Row="0" Background="#E3F2FD" CornerRadius="6" Padding="8" Margin="0,0,0,8" BorderBrush="#90CAF9" BorderThickness="1">
-                                <TextBlock Text="RO • Rumence (Giriş)" FontWeight="Bold" Foreground="#1565C0"/>
+                                <Grid>
+                                    <TextBlock Text="RO • Rumence (Giriş)" FontWeight="Bold" Foreground="#1565C0" VerticalAlignment="Center"/>
+                                    <Button Content="Okunuşu Göster" Command="{Binding ShowRomanianPhoneticCommand}" HorizontalAlignment="Right" Padding="6,2" FontSize="10" Background="White" BorderBrush="#90CAF9" Cursor="Hand"/>
+                                </Grid>
                             </Border>
                             <Border Grid.Column="2" Grid.Row="0" Background="#E8F5E9" CornerRadius="6" Padding="8" Margin="0,0,0,8" BorderBrush="#A5D6A7" BorderThickness="1">
                                 <TextBlock Text="TR • Türkçe (Giriş)" FontWeight="Bold" Foreground="#2E7D32"/>
@@ -194,7 +197,10 @@
                             <GridSplitter Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" IsEnabled="{Binding IsLayoutUnlocked}"/>
 
                             <Border Grid.Column="2" Grid.Row="0" Background="#E3F2FD" CornerRadius="6" Padding="8" Margin="0,0,0,8" BorderBrush="#90CAF9" BorderThickness="1">
-                                <TextBlock Text="RO • Rumence (Çeviri)" FontWeight="Bold" Foreground="#1565C0"/>
+                                <Grid>
+                                    <TextBlock Text="RO • Rumence (Çeviri)" FontWeight="Bold" Foreground="#1565C0" VerticalAlignment="Center"/>
+                                    <Button Content="Okunuşu Göster" Command="{Binding ShowTranslationPhoneticCommand}" HorizontalAlignment="Right" Padding="6,2" FontSize="10" Background="White" BorderBrush="#90CAF9" Cursor="Hand"/>
+                                </Grid>
                             </Border>
                             <TextBox Grid.Column="2" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" AcceptsReturn="True" Padding="12" Background="#E3F2FD" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="14" Text="{Binding TranslatedRomanian, Mode=OneWay}" Margin="0,0,0,12" ScrollViewer.VerticalScrollBarVisibility="Auto" utils:TextBoxAutoScrollBehavior.AutoScrollToEnd="True"/>
                             <Button Grid.Column="2" Grid.Row="2" Content="🔊 Rumence Çeviriyi Seslendir" Command="{Binding SpeakRomanianTranslationCommand}" Height="35" Background="#E3F2FD" BorderBrush="#90CAF9" BorderThickness="1" Margin="0,0,0,12"/>
@@ -226,7 +232,10 @@
 
                             <!-- Headers -->
                             <Border Grid.Column="0" Grid.Row="0" Background="#E3F2FD" CornerRadius="6" Padding="8" Margin="0,0,0,8" BorderBrush="#90CAF9" BorderThickness="1">
-                                <TextBlock Text="RO • Rumence (Asistan)" FontWeight="Bold" Foreground="#1565C0"/>
+                                <Grid>
+                                    <TextBlock Text="RO • Rumence (Asistan)" FontWeight="Bold" Foreground="#1565C0" VerticalAlignment="Center"/>
+                                    <Button Content="Okunuşu Göster" Command="{Binding ShowAssistantPhoneticCommand}" HorizontalAlignment="Right" Padding="6,2" FontSize="10" Background="White" BorderBrush="#90CAF9" Cursor="Hand"/>
+                                </Grid>
                             </Border>
                             <TextBox Grid.Column="0" Grid.Row="1" VerticalAlignment="Stretch" TextWrapping="Wrap" AcceptsReturn="True" Padding="12" Background="#E3F2FD" BorderBrush="#DCDCDC" BorderThickness="0" IsReadOnly="True" FontSize="14" Text="{Binding AssistantResponse, Mode=OneWay}" Margin="0,0,0,0" ScrollViewer.VerticalScrollBarVisibility="Auto" utils:TextBoxAutoScrollBehavior.AutoScrollToEnd="True"/>
 

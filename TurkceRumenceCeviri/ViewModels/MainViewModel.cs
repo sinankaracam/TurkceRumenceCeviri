@@ -157,6 +157,9 @@ public class MainViewModel : INotifyPropertyChanged
     public RelayCommand PronounceCommand { get; }
     public RelayCommand DeployAzureResourcesCommand { get; }
     public RelayCommand GetGroqKeyCommand { get; }
+    public RelayCommand ShowRomanianPhoneticCommand { get; }
+    public RelayCommand ShowTranslationPhoneticCommand { get; }
+    public RelayCommand ShowAssistantPhoneticCommand { get; }
 
     public MainViewModel(
         ITranslationService translationService,
@@ -228,7 +231,6 @@ public class MainViewModel : INotifyPropertyChanged
                 // Since we can't host the JSON publicly easily from a local app without a server, 
                 // we will point to a GitHub raw URL if the user pushes this code, or a generic quickstart.
                 // For now, let's assume the user will host this JSON or we use a generic "Create Resource" link.
-                // A better approach for a local app is to guide them to the portal creation pages directly.
                 
                 // Option 1: Direct link to create Speech Service
                 // System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -275,6 +277,10 @@ public class MainViewModel : INotifyPropertyChanged
             }
             catch { }
         });
+
+        ShowRomanianPhoneticCommand = new RelayCommand(_ => ShowPhoneticWindow(RomanianText));
+        ShowTranslationPhoneticCommand = new RelayCommand(_ => ShowPhoneticWindow(TranslatedRomanian));
+        ShowAssistantPhoneticCommand = new RelayCommand(_ => ShowPhoneticWindow(AssistantResponse));
     }
 
     // Activation / license fields and properties
@@ -551,7 +557,7 @@ public class MainViewModel : INotifyPropertyChanged
 
         try
         {
-            var original = await _aiService.AnswerQuestionAsync(AssistantQuestion ?? string.Empty, context, language);
+                var original = await _aiService.AnswerQuestionAsync(AssistantQuestion ?? string.Empty, context, language);
             AssistantResponse = original;
             // translate to both languages for display
             var trText = language == "tr" ? original : await _translationService.TranslateAsync(original, language, "tr");
@@ -848,5 +854,22 @@ public class MainViewModel : INotifyPropertyChanged
         {
             TurkceRumenceCeviri.Utilities.DebugHelper.LogWarning($"Failed to reinitialize services: {ex.Message}");
         }
+    }
+
+    private void ShowPhoneticWindow(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return;
+
+        // Metni DÖNÜŞTÜRMEDEN (Ham haliyle) pencereye gönderiyoruz.
+        // Dönüştürme işlemini kullanıcı penceredeki butona basınca yapacak.
+        System.Windows.Application.Current.Dispatcher.Invoke(() => 
+        {
+            var win = new TurkceRumenceCeviri.Views.PhoneticResultWindow(text);
+            if (System.Windows.Application.Current.MainWindow != null)
+            {
+                win.Owner = System.Windows.Application.Current.MainWindow;
+            }
+            win.ShowDialog();
+        });
     }
 }
