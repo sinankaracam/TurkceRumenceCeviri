@@ -2,6 +2,13 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Globalization;
+using System.Threading.Tasks;
+using TurkceRumenceCeviri.Services;
+using Newtonsoft.Json;
+using System.Net.Http;
+using System.Text;
+using Microsoft.CognitiveServices.Speech;
+using Microsoft.CognitiveServices.Speech.Audio;
 
 namespace TurkceRumenceCeviri.Utilities
 {

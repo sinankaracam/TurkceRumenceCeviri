@@ -60,6 +60,17 @@
                             <TextBox Text="{Binding LicenseKeyInput, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
                             <Button Content="Aktive Et" Command="{Binding ActivateCommand}" Margin="6,0,0,0"/>
                         </StackPanel>
+                        
+                        <!-- YENİ BUTON: Ayarları Kaydet ve Kontrol Et -->
+                        <Button Content="Ayarları Kaydet ve Kontrol Et" 
+                                Command="{Binding SaveSettingsCommand}" 
+                                Background="#2E7D32" 
+                                Foreground="White" 
+                                FontWeight="Bold" 
+                                Margin="0,10,0,0" 
+                                Height="28" 
+                                ToolTip="Ayarları kaydeder, geçerli lisansı doğrular ve servis bağlantılarını test eder."/>
+
                         <TextBlock Text="{Binding LicenseStatusMessage}" FontSize="12" Foreground="#666" Margin="0,8,0,0"/>
                         <CheckBox Content="Pencere Düzenini Kilitle" IsChecked="{Binding IsLayoutLocked}" Margin="0,8,0,0"/>
                     </StackPanel>
