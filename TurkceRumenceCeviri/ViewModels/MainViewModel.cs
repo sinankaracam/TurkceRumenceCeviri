@@ -429,7 +429,7 @@ public class MainViewModel : INotifyPropertyChanged
         else
         {
             IsLicensed = false;
-            LicenseStatusMessage = "Geçersiz Lisans! Ayarlar kaydedilmedi.";
+            LicenseStatusMessage = "Geçersiz Lisans! Ayarların kaydedilmesi unsuccessful.";
         }
     }
 
@@ -612,14 +612,22 @@ public class MainViewModel : INotifyPropertyChanged
     private async void AskAssistant()
     {
         DebugHelper.LogMessage("AskAssistant invoked");
-        var context = DetectedLanguage == "TR" ? TurkishText : RomanianText;
-        var language = DetectedLanguage == "TR" ? "tr" : "ro";
+        
+        // DEĞİŞİKLİK:
+        // Eski kod: var context = DetectedLanguage == "TR" ? TurkishText : RomanianText;
+        // Yeni kod: Yapay zeka artık SADECE Rumence giriş metnini (RomanianText) dikkate alacak.
+        var context = RomanianText; 
+        
+        // Dil olarak da metnin dili olan 'ro' gönderiyoruz ki AI içeriği doğru anlasın.
+        // Sorunuz (AssistantQuestion) Türkçe olsa bile, AI Rumence metni analiz edip Türkçe cevap verecektir.
+        var language = "ro"; 
 
         try
         {
-                var original = await _aiService.AnswerQuestionAsync(AssistantQuestion ?? string.Empty, context, language);
+            var original = await _aiService.AnswerQuestionAsync(AssistantQuestion ?? string.Empty, context, language);
             AssistantResponse = original;
-            // translate to both languages for display
+            
+            // Cevabı her iki dile de çevirip göster (Mevcut yapı korunuyor)
             var trText = language == "tr" ? original : await _translationService.TranslateAsync(original, language, "tr");
             var roText = language == "ro" ? original : await _translationService.TranslateAsync(original, language, "ro");
             TranslatedTurkishAssistant = trText;
