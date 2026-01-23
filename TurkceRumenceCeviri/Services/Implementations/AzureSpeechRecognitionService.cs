@@ -1,6 +1,10 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
-using System.Threading;
+using TurkceRumenceCeviri.Services;
+using System.IO;
 
 namespace TurkceRumenceCeviri.Services.Implementations;
 
@@ -14,11 +18,13 @@ public class AzureSpeechRecognitionService : ISpeechRecognitionService
     private TaskCompletionSource<string>? _currentRecognitionTask;
     public string? LastDetectedLanguage { get; private set; }
 
+    //Define a log file path for SDK and app errors
+    private static readonly string LogFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "TurkceRumenceCeviri_SpeechLog.txt");
+
     public bool IsListening => _isListening;
 
     public AzureSpeechRecognitionService(string speechKey, string speechRegion)
     {
-        // If speechKey is missing, do not attempt to create Azure Speech SDK objects.
         if (string.IsNullOrWhiteSpace(speechKey))
         {
             TurkceRumenceCeviri.Utilities.DebugHelper.LogWarning("Azure Speech key not provided - speech recognition disabled.");
@@ -31,7 +37,6 @@ public class AzureSpeechRecognitionService : ISpeechRecognitionService
 
         try
         {
-            // store keys and enable; create recognizer per-call to avoid invalid-state transitions
             _speechKey = speechKey;
             _speechRegion = speechRegion;
             _enabled = true;
@@ -51,11 +56,9 @@ public class AzureSpeechRecognitionService : ISpeechRecognitionService
     {
         if (!_enabled || string.IsNullOrEmpty(_speechKey) || string.IsNullOrEmpty(_speechRegion))
         {
-            // Speech disabled: return empty so UI can continue
             return string.Empty;
         }
 
-        // If already listening, return current result
         if (_isListening && _currentRecognitionTask != null)
         {
             return await _currentRecognitionTask.Task;
@@ -66,22 +69,28 @@ public class AzureSpeechRecognitionService : ISpeechRecognitionService
         try
         {
             _isListening = true;
-            // create a fresh recognizer for this one-shot call to avoid SDK invalid state transitions
+            
             var config = SpeechConfig.FromSubscription(_speechKey, _speechRegion);
+            config.SetProperty(PropertyId.Speech_LogFilename, LogFilePath);
+            
             var autoDetectConfig = AutoDetectSourceLanguageConfig.FromLanguages(new[] { "tr-TR", "ro-RO" });
-            using var recognizer = new SpeechRecognizer(config, autoDetectConfig);
+            
+            // Explicitly use the default microphone input configuration.
+            // This ensures that we always use the active system device (whether Internal or Headset),
+            // even if the default device changes between recognition sessions.
+            using var audioConfig = AudioConfig.FromDefaultMicrophoneInput();
+            using var recognizer = new SpeechRecognizer(config, autoDetectConfig, audioConfig);
+            
             var result = await recognizer.RecognizeOnceAsync().ConfigureAwait(false);
 
             if (cancellationToken.IsCancellationRequested)
                 return string.Empty;
 
-            // Read auto-detected language from result properties if available
             try
             {
                 var prop = result.Properties.GetProperty(PropertyId.SpeechServiceConnection_AutoDetectSourceLanguageResult);
                 if (!string.IsNullOrWhiteSpace(prop))
                 {
-                    // Map full locale to short code
                     LastDetectedLanguage = prop.StartsWith("tr", StringComparison.OrdinalIgnoreCase) ? "tr" :
                                            prop.StartsWith("ro", StringComparison.OrdinalIgnoreCase) ? "ro" : prop;
                 }
@@ -104,6 +113,8 @@ public class AzureSpeechRecognitionService : ISpeechRecognitionService
         }
         catch (Exception ex)
         {
+            //Log the exception to the file for debugging
+            File.AppendAllText(LogFilePath, $"{DateTime.Now}: Exception in RecognizeAsync: {ex.ToString()}\n");
             _currentRecognitionTask.SetException(ex);
             throw;
         }
@@ -116,14 +127,12 @@ public class AzureSpeechRecognitionService : ISpeechRecognitionService
 
     public async Task StopRecognitionAsync()
     {
-        // For one-shot recognition (RecognizeOnceAsync) there is no continuous stop to call.
-        // Calling StopContinuousRecognitionAsync while not in continuous mode causes invalid state transitions.
         _isListening = false;
         if (_currentRecognitionTask != null)
         {
             _currentRecognitionTask.TrySetCanceled();
         }
         await Task.CompletedTask;
-    }
-}
+       }
+   }
 
