@@ -84,6 +84,7 @@
                 <Button x:Name="StopButton" Content="☐ Durdur" Command="{Binding StopListeningCommand}" Width="130" Height="36" Background="White" BorderBrush="#CCCCCC" BorderThickness="2" FontSize="13" FontWeight="Bold" Margin="0,0,8,0" IsEnabled="{Binding IsLicensed}"/>
                 <!-- Global speak removed; per-translation speak buttons are below -->
                 <Button x:Name="OcrButton" Content="💻 Ekrandan Çevir" Command="{Binding ExtractFromScreenCommand}" Width="150" Height="36" Background="White" BorderBrush="#CCCCCC" BorderThickness="2" FontSize="13" FontWeight="Bold" IsEnabled="{Binding IsLicensed}"/>
+                <Button x:Name="RomanianListenButton" Content="🎧 Rumence Dinle" Command="{Binding OpenRomanianListeningCommand}" Width="150" Height="36" Background="White" BorderBrush="#CCCCCC" BorderThickness="2" FontSize="13" FontWeight="Bold" Margin="8,0,0,0" IsEnabled="{Binding IsLicensed}"/>
             </StackPanel>
 
             <!-- Main Content Grid -->

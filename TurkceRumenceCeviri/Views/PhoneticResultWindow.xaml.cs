@@ -7,29 +7,24 @@ namespace TurkceRumenceCeviri.Views
     {
         private string _originalText;
 
-        public PhoneticResultWindow(string text)
+        public PhoneticResultWindow(string text, bool autoConvert = false)
         {
             InitializeComponent();
             _originalText = text ?? string.Empty;
             MainTextBox.Text = _originalText;
+
+            if (autoConvert && !string.IsNullOrWhiteSpace(_originalText))
+            {
+                ApplyPhoneticConversion(_originalText);
+            }
         }
 
         private void PhoneticBtn_Click(object sender, RoutedEventArgs e)
         {
-            // Kutudaki mevcut metni al (belki kullanýcý elle düzeltti)
-            string currentText = MainTextBox.Text;
-            
+            var currentText = MainTextBox.Text;
             if (string.IsNullOrWhiteSpace(currentText)) return;
 
-            // Dönüþtürücüyü çaðýr
-            string converted = RomanianPhoneticConverter.Convert(currentText);
-            
-            // Metni güncelle
-            MainTextBox.Text = converted;
-            
-            // Görsel geri bildirim (isteðe baðlý, gerekirse kaldýrýlabilir)
-            // Butonu pasif yapabiliriz veya metni tekrar orijinal yapmak için toggle koyabiliriz
-            // Þimdilik sadece dönüþtürüyor.
+            ApplyPhoneticConversion(currentText);
         }
 
         private void CopyBtn_Click(object sender, RoutedEventArgs e)
@@ -39,6 +34,12 @@ namespace TurkceRumenceCeviri.Views
                 Clipboard.SetText(MainTextBox.Text);
                 MessageBox.Show("Metin panoya kopyalandý.", "Bilgi", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+        }
+
+        private void ApplyPhoneticConversion(string sourceText)
+        {
+            var converted = RomanianPhoneticConverter.Convert(sourceText);
+            MainTextBox.Text = converted;
         }
     }
 }

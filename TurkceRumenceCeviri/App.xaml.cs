@@ -25,6 +25,8 @@ public partial class App : Application
                 if (!string.IsNullOrEmpty(persisted.SpeechKey)) Environment.SetEnvironmentVariable("AZURE_SPEECH_KEY", persisted.SpeechKey);
                 if (!string.IsNullOrEmpty(persisted.GroqKey)) Environment.SetEnvironmentVariable("GROQ_API_KEY", persisted.GroqKey);
                 if (!string.IsNullOrEmpty(persisted.LicenseKey)) Environment.SetEnvironmentVariable("LISANS_KEY", persisted.LicenseKey);
+                if (!string.IsNullOrEmpty(persisted.TranslatorRegion)) Environment.SetEnvironmentVariable("AZURE_TRANSLATOR_REGION", persisted.TranslatorRegion);
+                if (!string.IsNullOrEmpty(persisted.SpeechRegion)) Environment.SetEnvironmentVariable("AZURE_SPEECH_REGION", persisted.SpeechRegion);
             }
         }
         catch (Exception ex)

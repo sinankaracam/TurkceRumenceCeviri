@@ -83,12 +83,13 @@ public class AzureTextToSpeechService : ITextToSpeechService
             SpeechSynthesisResult result;
             if ((language ?? "").ToLower() == "ro")
             {
-                var ssml = $"<speak version='1.0' xml:lang='{GetLocale(language)}'><voice name='{voiceName}'>{System.Net.WebUtility.HtmlEncode(text)}</voice></speak>";
+                var ssml = $"<speak version='1.0' xml:lang='{GetLocale(language)}'><voice name='{voiceName}'><prosody rate='-25%'>{System.Net.WebUtility.HtmlEncode(text)}</prosody></voice></speak>";
                 result = await _synthesizer.SpeakSsmlAsync(ssml).ConfigureAwait(false);
             }
             else
             {
-                result = await _synthesizer.SpeakTextAsync(text).ConfigureAwait(false);
+                var ssml = $"<speak version='1.0' xml:lang='{GetLocale(language)}'><voice name='{voiceName}'><prosody rate='-25%'>{System.Net.WebUtility.HtmlEncode(text)}</prosody></voice></speak>";
+                result = await _synthesizer.SpeakSsmlAsync(ssml).ConfigureAwait(false);
             }
 
             if (result.Reason != ResultReason.SynthesizingAudioCompleted)

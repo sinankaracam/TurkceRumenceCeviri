@@ -162,6 +162,7 @@ public class MainViewModel : INotifyPropertyChanged
     public RelayCommand ShowRomanianPhoneticCommand { get; }
     public RelayCommand ShowTranslationPhoneticCommand { get; }
     public RelayCommand ShowAssistantPhoneticCommand { get; }
+    public RelayCommand OpenRomanianListeningCommand { get; }
 
     public MainViewModel(
         ITranslationService translationService,
@@ -208,7 +209,8 @@ public class MainViewModel : INotifyPropertyChanged
             if (persisted != null && !string.IsNullOrWhiteSpace(persisted.LicenseKey))
             {
                 var act = new TurkceRumenceCeviri.Services.ActivationService();
-                if (!string.IsNullOrEmpty(DeviceCode) && act.ValidateActivationKey(DeviceCode, persisted.LicenseKey))
+                var deviceMatches = string.Equals(persisted.DeviceCode, DeviceCode, StringComparison.Ordinal);
+                if (deviceMatches && !string.IsNullOrEmpty(DeviceCode) && act.ValidateActivationKey(DeviceCode, persisted.LicenseKey))
                 {
                     IsLicensed = true;
                     TranslatorKeyInput = persisted.TranslatorKey ?? string.Empty;
@@ -218,6 +220,16 @@ public class MainViewModel : INotifyPropertyChanged
                     TranslatorRegionInput = persisted.TranslatorRegion ?? "eastus";
                     SpeechRegionInput = persisted.SpeechRegion ?? "eastus";
                     LicenseStatusMessage = "Lisans yüklendi";
+
+                    try
+                    {
+                        if (!string.IsNullOrEmpty(TranslatorKeyInput)) Environment.SetEnvironmentVariable("AZURE_TRANSLATOR_KEY", TranslatorKeyInput);
+                        if (!string.IsNullOrEmpty(SpeechKeyInput)) Environment.SetEnvironmentVariable("AZURE_SPEECH_KEY", SpeechKeyInput);
+                        if (!string.IsNullOrEmpty(GroqKeyInput)) Environment.SetEnvironmentVariable("GROQ_API_KEY", GroqKeyInput);
+                        if (!string.IsNullOrEmpty(TranslatorRegionInput)) Environment.SetEnvironmentVariable("AZURE_TRANSLATOR_REGION", TranslatorRegionInput);
+                        if (!string.IsNullOrEmpty(SpeechRegionInput)) Environment.SetEnvironmentVariable("AZURE_SPEECH_REGION", SpeechRegionInput);
+                    }
+                    catch { }
                 }
             }
         }
@@ -265,6 +277,7 @@ public class MainViewModel : INotifyPropertyChanged
         ShowRomanianPhoneticCommand = new RelayCommand(_ => ShowPhoneticWindow(RomanianText));
         ShowTranslationPhoneticCommand = new RelayCommand(_ => ShowPhoneticWindow(TranslatedRomanian));
         ShowAssistantPhoneticCommand = new RelayCommand(_ => ShowPhoneticWindow(AssistantResponse));
+        OpenRomanianListeningCommand = new RelayCommand(_ => OpenRomanianListeningWindow(), _ => IsLicensed);
     }
 
     // Activation / license fields and properties
@@ -947,16 +960,32 @@ public class MainViewModel : INotifyPropertyChanged
     {
         if (string.IsNullOrWhiteSpace(text)) return;
 
-        // Metni DÖNÜŞTÜRMEDEN (Ham haliyle) pencereye gönderiyoruz.
-        // Dönüştürme işlemini kullanıcı penceredeki butona basınca yapacak.
+        // Pencere açılır açılmaz fonetik dönüştürme otomatik uygulanır.
         System.Windows.Application.Current.Dispatcher.Invoke(() => 
         {
-            var win = new TurkceRumenceCeviri.Views.PhoneticResultWindow(text);
+            var win = new TurkceRumenceCeviri.Views.PhoneticResultWindow(text, true);
             if (System.Windows.Application.Current.MainWindow != null)
             {
                 win.Owner = System.Windows.Application.Current.MainWindow;
             }
             win.ShowDialog();
+        });
+    }
+
+    private void OpenRomanianListeningWindow()
+    {
+        var cfg = TurkceRumenceCeviri.Configuration.AzureConfig.LoadFromEnvironment();
+        var speechKey = !string.IsNullOrWhiteSpace(SpeechKeyInput) ? SpeechKeyInput : cfg.SpeechKey;
+        var speechRegion = !string.IsNullOrWhiteSpace(SpeechRegionInput) ? SpeechRegionInput : cfg.SpeechRegion;
+
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            var win = new TurkceRumenceCeviri.Views.RomanianListeningWindow(speechKey, speechRegion);
+            if (System.Windows.Application.Current.MainWindow != null)
+            {
+                win.Owner = System.Windows.Application.Current.MainWindow;
+            }
+            win.Show();
         });
     }
 
